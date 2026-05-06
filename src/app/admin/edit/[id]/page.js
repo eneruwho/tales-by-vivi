@@ -94,8 +94,18 @@ export default async function EditProjectPage({ params }) {
             <input
               type="url"
               name="imageUrl"
-              required
-              defaultValue={project.imageUrl}
+              defaultValue={project.imageUrl || ""}
+              className={styles.input}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Upload New Project Images</label>
+            <input
+              type="file"
+              name="projectImages"
+              accept="image/*"
+              multiple
               className={styles.input}
             />
           </div>
@@ -106,6 +116,17 @@ export default async function EditProjectPage({ params }) {
               type="url"
               name="videoUrl"
               defaultValue={project.videoUrl || ""}
+              className={styles.input}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Upload New Project Videos</label>
+            <input
+              type="file"
+              name="projectVideos"
+              accept="video/*"
+              multiple
               className={styles.input}
             />
           </div>

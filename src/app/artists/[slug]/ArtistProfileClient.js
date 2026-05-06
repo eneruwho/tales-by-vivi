@@ -7,6 +7,8 @@ import Link from "next/link";
 export default function ArtistProfileClient({ artist, projects }) {
   const heroRef = useRef(null);
   const gridRef = useRef(null);
+  const placeholderImage =
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000"><rect width="100%" height="100%" fill="%23111"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="%23aaa" dominant-baseline="middle" text-anchor="middle">No profile image</text></svg>';
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -47,11 +49,34 @@ export default function ArtistProfileClient({ artist, projects }) {
       </Link>
 
       <section className={styles.hero} ref={heroRef}>
-        <h1 className={styles.name}>{artist.name}</h1>
-        <p
-          className={styles.slogan}
-        >{`"${artist.slogan || "Simply Better Than Reality"}"`}</p>
-        <p className={styles.bio}>{artist.bio}</p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(260px, 360px) 1fr",
+            gap: "2rem",
+            alignItems: "start",
+          }}
+        >
+          <div className={styles.heroImage}>
+            <img
+              src={artist.imageUrl || placeholderImage}
+              alt={artist.name}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                aspectRatio: "4 / 5",
+              }}
+            />
+          </div>
+          <div>
+            <h1 className={styles.name}>{artist.name}</h1>
+            <p
+              className={styles.slogan}
+            >{`"${artist.slogan || "Simply Better Than Reality"}"`}</p>
+            <p className={styles.bio}>{artist.bio}</p>
+          </div>
+        </div>
       </section>
 
       <section className={styles.projects}>

@@ -1,47 +1,28 @@
 "use client";
 import { useEffect, useRef } from "react";
-import Image from "next/image";
 import gsap from "gsap";
 import styles from "../app/page.module.css";
+import {
+  createFallbackClientLogos,
+  mergeClientLogos,
+  normalizeClientLogoItems,
+} from "../lib/clientLogos";
 
-const CLIENTS = [
-  "asianpaints.png",
-  "bewakoof.png",
-  "dhampur.png",
-  "donjulio.png",
-  "doritos.png",
-  "eno.png",
-  "hoichoi.png",
-  "indigo.png",
-  "inreco.png",
-  "koshekosha.png",
-  "mioamore.png",
-  "oppo.png",
-  "pcchandra.png",
-  "pgv.png",
-  "porter.png",
-  "rapido.png",
-  "redpaste.png",
-  "secrettemptation.png",
-  "smartbazaar.png",
-  "svf.png",
-  "tatacliq.png",
-  "theobroma.png",
-  "tuborg.png",
-  "vivo.png",
-  "wildstone.png",
-  "wowmomo.png",
-  "zivame.png",
-  "zomato.png",
-];
-
-const ROW1_CLIENTS = CLIENTS.slice(0, 14);
-const ROW2_CLIENTS = CLIENTS.slice(14);
-
-export default function ClientsMarquee() {
+export default function ClientsMarquee({ logos = [] }) {
   const marqueeRef = useRef(null);
   const topTrackRef = useRef(null);
   const bottomTrackRef = useRef(null);
+
+  const mergedClients = mergeClientLogos(
+    createFallbackClientLogos(),
+    normalizeClientLogoItems(logos).map((logo) => ({
+      ...logo,
+      source: logo.source || "cloudinary",
+    })),
+  );
+
+  const row1 = mergedClients.slice(0, Math.ceil(mergedClients.length / 2));
+  const row2 = mergedClients.slice(Math.ceil(mergedClients.length / 2));
 
   useEffect(() => {
     const topTrack = topTrackRef.current;
@@ -142,15 +123,12 @@ export default function ClientsMarquee() {
           ref={topTrackRef}
           className={`${styles.marqueeTrack} ${styles.marqueeTrackTop}`}
         >
-          {ROW1_CLIENTS.concat(ROW1_CLIENTS).map((file, i) => (
+          {row1.concat(row1).map((item, i) => (
             <div key={`r1-${i}`} className={styles.marqueeItem}>
-              <Image
-                src={`/clients/${file}`}
+              <img
+                src={item.url}
                 alt="client logo"
-                width={220}
-                height={80}
                 className={styles.clientLogo}
-                unoptimized
               />
             </div>
           ))}
@@ -162,15 +140,12 @@ export default function ClientsMarquee() {
           ref={bottomTrackRef}
           className={`${styles.marqueeTrack} ${styles.marqueeTrackBottom}`}
         >
-          {ROW2_CLIENTS.concat(ROW2_CLIENTS).map((file, i) => (
+          {row2.concat(row2).map((item, i) => (
             <div key={`r2-${i}`} className={styles.marqueeItem}>
-              <Image
-                src={`/clients/${file}`}
+              <img
+                src={item.url}
                 alt="client logo"
-                width={200}
-                height={60}
                 className={styles.clientLogo}
-                unoptimized
               />
             </div>
           ))}

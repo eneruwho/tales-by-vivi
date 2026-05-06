@@ -1,10 +1,14 @@
 import {
   getProjects,
   getArtists,
+  getClientLogos,
   addProject,
   deleteProject,
   addArtist,
   deleteArtist,
+  updateShowreel,
+  addClientLogos,
+  removeClientLogo,
 } from "../actions";
 import styles from "./admin.module.css";
 import Link from "next/link";
@@ -12,7 +16,15 @@ import ArtistEditInline from "../../components/ArtistEditInline";
 import ArtistSelect from "../../components/ArtistSelect";
 
 export default async function AdminPage() {
-  const [projects, artists] = await Promise.all([getProjects(), getArtists()]);
+  const [projects, artists, clientLogos] = await Promise.all([
+    getProjects(),
+    getArtists(),
+    getClientLogos(),
+  ]);
+
+  const removableClientLogos = clientLogos.filter(
+    (logo) => logo.source === "cloudinary" && logo.publicId,
+  );
 
   return (
     <div className={styles.container} style={{ maxWidth: "1600px" }}>
@@ -25,6 +37,83 @@ export default async function AdminPage() {
         className={styles.grid}
         style={{ gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))" }}
       >
+        <div className={styles.formPanel}>
+          <h2>Showreel</h2>
+          <form action={updateShowreel}>
+            <div className={styles.inputGroup}>
+              <label>Showreel URL</label>
+              <input
+                type="url"
+                name="showreelUrl"
+                placeholder="https://..."
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Upload Showreel Video</label>
+              <input
+                type="file"
+                name="showreelVideo"
+                accept="video/*"
+                className={styles.input}
+              />
+            </div>
+            <button type="submit" className={styles.button}>
+              Save Showreel
+            </button>
+          </form>
+        </div>
+
+        <div className={styles.formPanel}>
+          <h2>Client Logos</h2>
+          <form action={addClientLogos}>
+            <div className={styles.inputGroup}>
+              <label>Upload Client Logos</label>
+              <input
+                type="file"
+                name="clientLogos"
+                accept="image/*"
+                multiple
+                className={styles.input}
+              />
+            </div>
+            <button type="submit" className={styles.button}>
+              Add Client Logos
+            </button>
+          </form>
+
+          <div style={{ marginTop: "1.5rem" }}>
+            <h3>Uploaded Client Logos ({removableClientLogos.length})</h3>
+            <div className={styles.artistList} style={{ marginTop: "1rem" }}>
+              {removableClientLogos.map((logo) => (
+                <div key={logo.publicId} className={styles.artistCard}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <img
+                      src={logo.url}
+                      alt="client logo"
+                      style={{ width: 72, height: 32, objectFit: "contain" }}
+                    />
+                    <div>
+                      <div className={styles.artistName}>Client logo</div>
+                      <div className={styles.artistSlug}>{logo.publicId}</div>
+                    </div>
+                  </div>
+                  <form
+                    action={async () => {
+                      "use server";
+                      await removeClientLogo(logo.publicId);
+                    }}
+                  >
+                    <button type="submit" className={styles.deleteButton}>
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Project Form */}
         <div className={styles.formPanel}>
           <h2>Add New Project</h2>
@@ -70,8 +159,18 @@ export default async function AdminPage() {
               <input
                 type="url"
                 name="imageUrl"
-                required
                 placeholder="https://..."
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Project Images Upload</label>
+              <input
+                type="file"
+                name="projectImages"
+                accept="image/*"
+                multiple
                 className={styles.input}
               />
             </div>
@@ -82,6 +181,17 @@ export default async function AdminPage() {
                 type="url"
                 name="videoUrl"
                 placeholder="https://..."
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Project Videos Upload</label>
+              <input
+                type="file"
+                name="projectVideos"
+                accept="video/*"
+                multiple
                 className={styles.input}
               />
             </div>
@@ -131,6 +241,26 @@ export default async function AdminPage() {
                 className={styles.textarea}
                 placeholder="Madrid-Based CGI Studio..."
               ></textarea>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Artist Profile Image URL</label>
+              <input
+                type="url"
+                name="imageUrl"
+                placeholder="https://..."
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Artist Profile Image Upload</label>
+              <input
+                type="file"
+                name="artistImage"
+                accept="image/*"
+                className={styles.input}
+              />
             </div>
 
             <button type="submit" className={styles.button}>

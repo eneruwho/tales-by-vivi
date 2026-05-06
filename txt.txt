@@ -1,1 +1,15 @@
-Make a authentication to hash the password and use mailgun to send an otp that can be checked in for a minute can be resend, count and show that how many messages are left for the day via Mailgun Metrics API  to query your processed_count for the current day.Logic: Subtract this count from your daily limit (e.g., 100 for the free tier).Endpoint: GET /v1/analytics/usage/metrics.
+
+cloudianry: CLOUDINARY_URL=cloudinary://768226584939767:-LCAXQGfABe4H_OCPaEmCAjU7js@dsyvbjozy
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAQZXM5I6wD8CJkYyYdlWlkdYsJbjEclXU",
+  authDomain: "tales-vivi.firebaseapp.com",
+  projectId: "tales-vivi",
+  storageBucket: "tales-vivi.firebasestorage.app",
+  messagingSenderId: "433788659794",
+  appId: "1:433788659794:web:9cd694406134503085978b",
+  measurementId: "G-CY8TV5VXLL"
+};
+
+mailgun api : 49c38d031432817dd080a6f47164108c-428c42a0-7863e7d3
+base url : https://api.mailgun.net

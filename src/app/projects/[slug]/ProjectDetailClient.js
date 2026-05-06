@@ -5,8 +5,30 @@ import styles from "./projectDetail.module.css";
 import Link from "next/link";
 import { X } from "lucide-react";
 
+function buildMediaList(project) {
+  const media = [];
+
+  if (Array.isArray(project.videoUrls)) {
+    project.videoUrls.forEach(
+      (url) => url && media.push({ type: "video", url }),
+    );
+  }
+  if (project.videoUrl) media.push({ type: "video", url: project.videoUrl });
+  if (Array.isArray(project.imageUrls)) {
+    project.imageUrls.forEach(
+      (url) => url && media.push({ type: "image", url }),
+    );
+  }
+  if (project.imageUrl) media.push({ type: "image", url: project.imageUrl });
+
+  return media;
+}
+
 export default function ProjectDetailClient({ project }) {
   const containerRef = useRef(null);
+  const mediaList = buildMediaList(project);
+  const heroMedia = mediaList[0];
+  const galleryMedia = mediaList.slice(1);
 
   useEffect(() => {
     gsap.fromTo(
@@ -27,28 +49,30 @@ export default function ProjectDetailClient({ project }) {
       </Link>
 
       <div className={styles.mediaContainer}>
-        {project.videoUrl ? (
-          <video
-            src={project.videoUrl}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={styles.fullVideo}
-          />
-        ) : (
-          <img
-            src={project.imageUrl}
-            alt={project.title}
-            className={styles.fullImage}
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src =
-                'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="%23666" dominant-baseline="middle" text-anchor="middle">Image unavailable</text></svg>';
-            }}
-          />
-        )}
+        {heroMedia ? (
+          heroMedia.type === "video" ? (
+            <video
+              src={heroMedia.url}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className={styles.fullVideo}
+            />
+          ) : (
+            <img
+              src={heroMedia.url}
+              alt={project.title}
+              className={styles.fullImage}
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src =
+                  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="%23666" dominant-baseline="middle" text-anchor="middle">Image unavailable</text></svg>';
+              }}
+            />
+          )
+        ) : null}
       </div>
 
       <div className={styles.content}>
@@ -69,6 +93,29 @@ export default function ProjectDetailClient({ project }) {
         {project.description && (
           <div className={styles.description}>
             <p>{project.description}</p>
+          </div>
+        )}
+
+        {galleryMedia.length > 0 && (
+          <div className={styles.gallery}>
+            {galleryMedia.map((media, index) => (
+              <div key={`${media.type}-${index}`} className={styles.thumb}>
+                {media.type === "video" ? (
+                  <video
+                    src={media.url}
+                    controls
+                    playsInline
+                    className={styles.thumbVideo}
+                  />
+                ) : (
+                  <img
+                    src={media.url}
+                    alt={`${project.title} ${index + 1}`}
+                    className={styles.thumbImage}
+                  />
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

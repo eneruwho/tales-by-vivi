@@ -131,7 +131,12 @@ function CategoryRow({ name, count, img }) {
 }
 
 // ─── Main Client Page ───
-export default function ClientPage({ projects, artists = [] }) {
+export default function ClientPage({
+  projects,
+  artists = [],
+  showreelUrl = null,
+  clientLogos = [],
+}) {
   const familyRef = useRef(null);
   const showreelRef = useRef(null);
   const showreelVideoRef = useRef(null);
@@ -486,7 +491,7 @@ export default function ClientPage({ projects, artists = [] }) {
 
             <motion.div ref={showreelVideoRef} className={styles.showreelVideo}>
               <video
-                src={activeProject?.videoUrl || FALLBACK_VIDEO}
+                src={showreelUrl || activeProject?.videoUrl || FALLBACK_VIDEO}
                 autoPlay
                 loop
                 muted
@@ -567,7 +572,7 @@ export default function ClientPage({ projects, artists = [] }) {
           </div>
         </section>
 
-        <ClientsMarquee />
+        <ClientsMarquee logos={clientLogos} />
 
         {/* ══════════════════════════════════
             SECTION 3 — THE FAMILY

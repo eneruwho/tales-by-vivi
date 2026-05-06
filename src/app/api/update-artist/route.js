@@ -12,6 +12,7 @@ export async function POST(req) {
       slug: body.slug,
       slogan: body.slogan,
       bio: body.bio,
+      imageUrl: body.imageUrl || null,
     });
 
     return NextResponse.json({ success: true, artist: updated });

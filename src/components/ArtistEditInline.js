@@ -6,6 +6,7 @@ export default function ArtistEditInline({ artist, onSaved }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(artist.name);
   const [slug, setSlug] = useState(artist.slug);
+  const [imageUrl, setImageUrl] = useState(artist.imageUrl || "");
   const [loading, setLoading] = useState(false);
 
   async function save() {
@@ -14,7 +15,7 @@ export default function ArtistEditInline({ artist, onSaved }) {
       const res = await fetch("/api/update-artist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: artist.id, name, slug }),
+        body: JSON.stringify({ id: artist.id, name, slug, imageUrl }),
       });
       const json = await res.json();
       if (json?.artist) {
@@ -52,6 +53,12 @@ export default function ArtistEditInline({ artist, onSaved }) {
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             className={styles.input}
+          />
+          <input
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            className={styles.input}
+            placeholder="Profile image URL"
           />
           <button onClick={save} disabled={loading} className={styles.button}>
             {loading ? "Saving…" : "Save"}

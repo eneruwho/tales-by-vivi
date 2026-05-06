@@ -2,6 +2,7 @@
 
 import * as db from "../lib/db";
 import { revalidatePath } from "next/cache";
+import { uploadBuffer } from "../lib/cloudinary";
 
 export async function getProjects() {
   return db.getProjects();
@@ -23,6 +24,18 @@ export async function getProjectsByArtist(artistSlug) {
   return db.getProjectsByArtist(artistSlug);
 }
 
+export async function getSiteSettings() {
+  return db.getSiteSettings();
+}
+
+export async function getClientLogos() {
+  return db.getClientLogos();
+}
+
+export async function deleteClientLogo(publicId) {
+  return db.deleteClientLogo(publicId);
+}
+
 function slugify(text) {
   return text
     .toLowerCase()
@@ -30,18 +43,63 @@ function slugify(text) {
     .replace(/[^\w-]+/g, "");
 }
 
+function isUploadableFile(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    typeof value.arrayBuffer === "function"
+  );
+}
+
+async function uploadFiles(values, folder) {
+  const files = values.filter(isUploadableFile);
+  if (files.length === 0) return [];
+
+  const uploads = await Promise.all(
+    files.map(async (file, index) => {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const uniqueName = `${folder}-${Date.now()}-${index + 1}`;
+      const result = await uploadBuffer(
+        buffer,
+        folder,
+        file.type?.startsWith("video/") ? "video" : "auto",
+        uniqueName,
+      );
+      return {
+        url: result.secure_url,
+        publicId: result.public_id,
+        resourceType: result.resource_type,
+      };
+    }),
+  );
+
+  return uploads;
+}
+
 export async function addProject(formData) {
   const title = formData.get("title");
   const slug = formData.get("slug") || slugify(title);
   const artist = formData.get("artist");
   const artistSlug = formData.get("artistSlug") || slugify(artist);
+  const uploadedImages = await uploadFiles(
+    formData.getAll("projectImages"),
+    "project",
+  );
+  const uploadedVideos = await uploadFiles(
+    formData.getAll("projectVideos"),
+    "project",
+  );
+  const imageUrl = formData.get("imageUrl") || uploadedImages[0]?.url || null;
+  const videoUrl = formData.get("videoUrl") || uploadedVideos[0]?.url || null;
 
   await db.addProject({
     title,
     slug,
     category: formData.get("category"),
-    imageUrl: formData.get("imageUrl"),
-    videoUrl: formData.get("videoUrl") || null,
+    imageUrl,
+    imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
+    videoUrl,
+    videoUrls: uploadedVideos.map((item) => item.url).filter(Boolean),
     description: formData.get("description") || null,
     artist,
     artistSlug,
@@ -54,16 +112,48 @@ export async function addProject(formData) {
 export async function addArtist(formData) {
   const name = formData.get("name");
   const slug = formData.get("slug") || slugify(name);
+  const uploadedImages = await uploadFiles(
+    formData.getAll("artistImage"),
+    "artists",
+  );
 
   await db.addArtist({
     name,
     slug,
     slogan: formData.get("slogan") || null,
     bio: formData.get("bio") || null,
+    imageUrl: formData.get("imageUrl") || uploadedImages[0]?.url || null,
   });
 
   revalidatePath("/admin");
   revalidatePath("/artists");
+}
+
+export async function updateShowreel(formData) {
+  const uploaded = await uploadFiles(
+    formData.getAll("showreelVideo"),
+    "showreel",
+  );
+  const showreelUrl = formData.get("showreelUrl") || uploaded[0]?.url || null;
+  await db.setSiteSettings({ showreelUrl });
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
+export async function addClientLogos(formData) {
+  const uploaded = await uploadFiles(
+    formData.getAll("clientLogos"),
+    "client_images",
+  );
+  await db.addClientLogos(uploaded);
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
+export async function removeClientLogo(publicId) {
+  await db.deleteClientLogo(publicId);
+  revalidatePath("/");
+  revalidatePath("/admin");
 }
 
 export async function deleteArtist(id) {
@@ -78,14 +168,26 @@ export async function updateProject(id, formData) {
   const slug = formData.get("slug") || slugify(title);
   const artist = formData.get("artist");
   const artistSlug = formData.get("artistSlug") || slugify(artist);
+  const uploadedImages = await uploadFiles(
+    formData.getAll("projectImages"),
+    "project",
+  );
+  const uploadedVideos = await uploadFiles(
+    formData.getAll("projectVideos"),
+    "project",
+  );
+  const imageUrl = formData.get("imageUrl") || uploadedImages[0]?.url || null;
+  const videoUrl = formData.get("videoUrl") || uploadedVideos[0]?.url || null;
 
   await db.updateProject(id, {
     id,
     title,
     slug,
     category: formData.get("category"),
-    imageUrl: formData.get("imageUrl"),
-    videoUrl: formData.get("videoUrl") || null,
+    imageUrl,
+    imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
+    videoUrl,
+    videoUrls: uploadedVideos.map((item) => item.url).filter(Boolean),
     description: formData.get("description") || null,
     artist,
     artistSlug,
