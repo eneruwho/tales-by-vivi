@@ -6,10 +6,7 @@ import {
   mergeClientLogos,
   normalizeClientLogoItems,
 } from "./clientLogos";
-import {
-  destroyByPublicId,
-  listFolderResources,
-} from "./cloudinary";
+import { destroyByPublicId, listFolderResources } from "./cloudinary";
 
 const dataPath = path.join(process.cwd(), "data.json");
 
@@ -504,7 +501,10 @@ export async function getClientLogos() {
     }
 
     const store = await readStore();
-    return mergeClientLogos(fallbacks, normalizeClientLogoItems(store.clientLogos || []));
+    return mergeClientLogos(
+      fallbacks,
+      normalizeClientLogoItems(store.clientLogos || []),
+    );
   }
 }
 

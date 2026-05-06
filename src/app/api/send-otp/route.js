@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import argon2 from "argon2";
-import Mailgun from "mailgun.js";
-import formData from "form-data";
 import firestore from "../../../../src/lib/firestore";
 
 export async function POST(req) {
@@ -35,6 +34,25 @@ export async function POST(req) {
         { status: 401 },
       );
 
+    const sessionId = randomUUID();
+    await firestore.createSession({
+      sessionId,
+      email,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 30 * 60 * 1000,
+    });
+
+    const res = NextResponse.json({ success: true });
+    res.cookies.set("adminAuth", sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 30,
+    });
+    return res;
+
+    /*
+    Mailgun OTP flow disabled for now.
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashed = await argon2.hash(otp);
     const record = {
@@ -46,7 +64,6 @@ export async function POST(req) {
     };
     await firestore.addOtpRecord(record);
 
-    // send via Mailgun
     const mg = new Mailgun(formData);
     const mgClient = mg.client({
       username: "api",
@@ -61,6 +78,7 @@ export async function POST(req) {
     });
 
     return NextResponse.json({ success: true });
+    */
   } catch (err) {
     return NextResponse.json(
       { error: err.message || "Server error" },

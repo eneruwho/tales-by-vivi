@@ -87,7 +87,13 @@ export default async function AdminPage() {
             <div className={styles.artistList} style={{ marginTop: "1rem" }}>
               {removableClientLogos.map((logo) => (
                 <div key={logo.publicId} className={styles.artistCard}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                    }}
+                  >
                     <img
                       src={logo.url}
                       alt="client logo"

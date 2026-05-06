@@ -8,12 +8,10 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState("credentials");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function sendOtp(e) {
+  async function login(e) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
@@ -24,28 +22,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Failed to send OTP");
-      setStep("otp");
-      setMessage("OTP sent. It expires in 1 minute.");
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function verifyOtp(e) {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-    try {
-      const res = await fetch("/api/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "OTP verification failed");
+      if (!res.ok) throw new Error(json?.error || "Login failed");
       router.push("/admin");
     } catch (error) {
       setMessage(error.message);
@@ -56,10 +33,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.container}>
-      <form
-        onSubmit={step === "credentials" ? sendOtp : verifyOtp}
-        className={styles.form}
-      >
+      <form onSubmit={login} className={styles.form}>
         <h1>Admin Access</h1>
         <input
           type="email"
@@ -79,40 +53,12 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           className={styles.input}
         />
-        {step === "otp" && (
-          <input
-            type="text"
-            name="otp"
-            placeholder="Enter 6-digit OTP"
-            inputMode="numeric"
-            maxLength={6}
-            required
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            className={styles.input}
-          />
-        )}
         {message && (
           <p style={{ margin: 0, color: "var(--muted)" }}>{message}</p>
         )}
         <button type="submit" className={styles.button} disabled={loading}>
-          {loading
-            ? "Working…"
-            : step === "credentials"
-              ? "Send OTP"
-              : "Verify OTP"}
+          {loading ? "Working…" : "Login"}
         </button>
-        {step === "otp" && (
-          <button
-            type="button"
-            className={styles.button}
-            onClick={sendOtp}
-            disabled={loading}
-            style={{ opacity: 0.8 }}
-          >
-            Resend OTP
-          </button>
-        )}
       </form>
     </div>
   );
