@@ -47,7 +47,8 @@ function isUploadableFile(value) {
   return (
     value &&
     typeof value === "object" &&
-    typeof value.arrayBuffer === "function"
+    typeof value.arrayBuffer === "function" &&
+    value.size > 0
   );
 }
 
@@ -58,6 +59,9 @@ async function uploadFiles(values, folder) {
   const uploads = await Promise.all(
     files.map(async (file, index) => {
       const buffer = Buffer.from(await file.arrayBuffer());
+      if (buffer.length === 0) {
+        throw new Error(`File "${file.name}" is empty`);
+      }
       const uniqueName = `${folder}-${Date.now()}-${index + 1}`;
       const result = await uploadBuffer(
         buffer,
@@ -78,8 +82,21 @@ async function uploadFiles(values, folder) {
 
 export async function addProject(formData) {
   const title = formData.get("title");
-  const slug = formData.get("slug") || slugify(title);
+  if (!title?.trim()) {
+    throw new Error("Project title is required");
+  }
+
+  const category = formData.get("category");
+  if (!category?.trim()) {
+    throw new Error("Project category is required");
+  }
+
   const artist = formData.get("artist");
+  if (!artist?.trim()) {
+    throw new Error("Please select an artist for this project");
+  }
+
+  const slug = formData.get("slug") || slugify(title);
   const artistSlug = formData.get("artistSlug") || slugify(artist);
   const uploadedImages = await uploadFiles(
     formData.getAll("projectImages"),
@@ -95,7 +112,7 @@ export async function addProject(formData) {
   await db.addProject({
     title,
     slug,
-    category: formData.get("category"),
+    category,
     imageUrl,
     imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
     videoUrl,
@@ -111,6 +128,10 @@ export async function addProject(formData) {
 
 export async function addArtist(formData) {
   const name = formData.get("name");
+  if (!name?.trim()) {
+    throw new Error("Artist name is required");
+  }
+
   const slug = formData.get("slug") || slugify(name);
   const uploadedImages = await uploadFiles(
     formData.getAll("artistImage"),

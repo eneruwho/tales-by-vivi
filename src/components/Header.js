@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./Header.module.css";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -116,7 +117,13 @@ export default function Header() {
           data-cursor="hover"
           aria-label="Go to homepage"
         >
-          <img src="/logo.png" alt="Tales by VIVI" className={styles.logoImg} />
+          <Image
+            src="/logo.png"
+            alt="Tales by VIVI"
+            className={styles.logoImg}
+            width={120}
+            height={60}
+          />
         </Link>
         <div className={styles.headerRight}>
           <div

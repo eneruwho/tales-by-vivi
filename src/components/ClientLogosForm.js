@@ -1,0 +1,145 @@
+"use client";
+import { useState } from "react";
+import { addClientLogos, removeClientLogo } from "../app/actions";
+import styles from "../app/admin/admin.module.css";
+import Toast from "./Toast";
+import Loader from "./Loader";
+
+export default function ClientLogosForm({ initialLogos = [] }) {
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [logos, setLogos] = useState(initialLogos);
+
+  async function handleAddLogos(formData) {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      await addClientLogos(formData);
+      setSuccess("Client logos added successfully!");
+      setTimeout(() => {
+        const form = event.target;
+        if (form) form.reset();
+      }, 2000);
+    } catch (err) {
+      setError(err?.message || "Failed to add client logos");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteLogo(publicId) {
+    setDeletingId(publicId);
+    setError(null);
+    try {
+      await removeClientLogo(publicId);
+      setSuccess("Client logo deleted successfully!");
+      setLogos(logos.filter((logo) => logo.publicId !== publicId));
+    } catch (err) {
+      setError(err?.message || "Failed to delete logo");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  const removableClientLogos = logos.filter(
+    (logo) => logo.source === "cloudinary" && logo.publicId,
+  );
+
+  return (
+    <>
+      <div className={styles.formPanel}>
+        <h2>Client Logos</h2>
+        {error && (
+          <div
+            style={{
+              padding: "0.75rem",
+              marginBottom: "1rem",
+              backgroundColor: "#fee",
+              color: "#c00",
+              borderRadius: "4px",
+              fontSize: "0.875rem",
+            }}
+          >
+            {error}
+          </div>
+        )}
+        {loading && <Loader text="Uploading logos..." />}
+        <form action={handleAddLogos}>
+          <div className={styles.inputGroup}>
+            <label>Upload Client Logos</label>
+            <input
+              type="file"
+              name="clientLogos"
+              accept="image/*"
+              multiple
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+          <button type="submit" className={styles.button} disabled={loading}>
+            {loading ? "Adding..." : "Add Client Logos"}
+          </button>
+        </form>
+
+        <div style={{ marginTop: "1.5rem" }}>
+          <h3>Uploaded Client Logos ({removableClientLogos.length})</h3>
+          <div className={styles.artistList} style={{ marginTop: "1rem" }}>
+            {removableClientLogos.map((logo) => (
+              <div key={logo.publicId} className={styles.artistCard}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <img
+                    src={logo.url}
+                    alt="client logo"
+                    style={{ width: 72, height: 32, objectFit: "contain" }}
+                  />
+                  <div>
+                    <div className={styles.artistName}>Client logo</div>
+                    <div className={styles.artistSlug}>{logo.publicId}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteLogo(logo.publicId)}
+                  className={styles.deleteButton}
+                  disabled={deletingId === logo.publicId}
+                  style={{
+                    opacity: deletingId === logo.publicId ? 0.6 : 1,
+                    cursor:
+                      deletingId === logo.publicId ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {deletingId === logo.publicId ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {success && (
+        <Toast
+          message={success}
+          type="success"
+          duration={3000}
+          onClose={() => setSuccess(null)}
+        />
+      )}
+      {error && (
+        <Toast
+          message={error}
+          type="error"
+          duration={5000}
+          onClose={() => setError(null)}
+        />
+      )}
+    </>
+  );
+}
