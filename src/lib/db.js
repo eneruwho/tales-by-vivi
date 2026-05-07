@@ -17,7 +17,22 @@ const emptyStore = {
   clientLogos: [],
 };
 
+function isFileStoreEnabled() {
+  const raw = String(process.env.USE_FILE_DB || "")
+    .trim()
+    .toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function assertFileStoreEnabled() {
+  if (isFileStoreEnabled()) return;
+  throw new Error(
+    "File DB fallback is disabled. Configure Firestore credentials or set USE_FILE_DB=true to enable data.json fallback.",
+  );
+}
+
 async function ensureStore() {
+  assertFileStoreEnabled();
   try {
     await fs.access(dataPath);
   } catch {
@@ -37,6 +52,7 @@ async function ensureStore() {
 }
 
 async function readStore() {
+  assertFileStoreEnabled();
   await ensureStore();
   const raw = await fs.readFile(dataPath, "utf8");
 
@@ -57,6 +73,7 @@ async function readStore() {
 }
 
 async function writeStore(store) {
+  assertFileStoreEnabled();
   try {
     await fs.writeFile(dataPath, JSON.stringify(store, null, 2), "utf8");
   } catch (err) {

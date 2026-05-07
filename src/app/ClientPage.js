@@ -204,19 +204,9 @@ export default function ClientPage({
     )
       return;
 
-    const setVideoScale = gsap.quickSetter(showreelVideoRef.current, "scale");
-    const setVideoOpacity = gsap.quickSetter(
-      showreelVideoRef.current,
-      "opacity",
-    );
-    const setOverlayOpacity = gsap.quickSetter(
-      showreelOverlayRef.current,
-      "opacity",
-    );
-
-    setVideoScale(1);
-    setVideoOpacity(1);
-    setOverlayOpacity(0.2);
+    // Initialize video and overlay opacity
+    gsap.set(showreelVideoRef.current, { opacity: 1 });
+    gsap.set(showreelOverlayRef.current, { opacity: 0.2 });
 
     const trigger = ScrollTrigger.create({
       trigger: showreelRef.current,
@@ -441,6 +431,15 @@ export default function ClientPage({
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+
+            <div className={styles.showreelMeta} aria-hidden={false}>
+              <div>
+                <div className={styles.showreelTitle}>Showreel</div>
+                <div className={styles.showreelDates}>
+                  {activeProject?.title || "Tales by VIVI"}
+                </div>
+              </div>
             </div>
 
             <motion.div ref={showreelVideoRef} className={styles.showreelVideo}>

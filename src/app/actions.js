@@ -74,7 +74,8 @@ async function uploadFiles(values, folder) {
         uniqueName,
       );
       return {
-        url: result.secure_url,
+        // Prefer secure_url, fall back to url if present
+        url: result.secure_url || result.url || null,
         publicId: result.public_id,
         resourceType: result.resource_type,
       };
@@ -141,6 +142,10 @@ export async function addArtist(formData) {
     formData.getAll("artistImage"),
     "artists",
   );
+  // debug: log uploaded images (server-side)
+  try {
+    console.log("addArtist: uploadedImages", uploadedImages);
+  } catch (e) {}
   const created = await db.addArtist({
     name,
     slug,

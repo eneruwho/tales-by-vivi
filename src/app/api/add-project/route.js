@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as db from "../../../../src/lib/db";
+import { revalidatePath } from "next/cache";
 
 function slugify(text) {
   return String(text || "")
@@ -32,6 +33,16 @@ export async function POST(req) {
       artist,
       artistSlug,
     });
+
+    try {
+      revalidatePath("/");
+      revalidatePath("/projects");
+      revalidatePath(`/projects/${project.slug}`);
+      revalidatePath("/admin");
+      if (project.artistSlug) revalidatePath(`/artists/${project.artistSlug}`);
+    } catch (e) {
+      // ignore revalidation errors
+    }
 
     return NextResponse.json({ success: true, project });
   } catch (err) {

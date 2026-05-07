@@ -7,6 +7,9 @@ export async function POST(req) {
     const body = await req.json();
     const id = Number(body.id);
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    try {
+      console.log("update-artist: incoming imageUrl=", body.imageUrl);
+    } catch (e) {}
 
     const updated = await db.updateArtist(id, {
       name: body.name,
@@ -17,8 +20,8 @@ export async function POST(req) {
     });
     // Revalidate relevant pages so the public artists list updates immediately
     try {
-      revalidatePath('/artists');
-      revalidatePath('/');
+      revalidatePath("/artists");
+      revalidatePath("/");
     } catch (e) {
       // ignore; revalidation isn't critical if it fails
     }

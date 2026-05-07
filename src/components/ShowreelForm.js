@@ -9,34 +9,24 @@ const cloudinaryCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const cloudinaryUploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 async function uploadVideoToCloudinary(file) {
-  if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
-    throw new Error(
-      "Missing Cloudinary upload settings. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.",
-    );
-  }
-
+  // Use server-side signed upload to Cloudinary to avoid unsigned preset issues.
   const uploadData = new FormData();
   uploadData.append("file", file);
-  uploadData.append("upload_preset", cloudinaryUploadPreset);
+  uploadData.append("folder", "showreels");
 
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/video/upload`,
-    {
-      method: "POST",
-      body: uploadData,
-    },
-  );
+  const response = await fetch(`/api/cloudinary-upload-file`, {
+    method: "POST",
+    body: uploadData,
+  });
 
   const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result?.error?.message || "Cloudinary upload failed");
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.error || "Cloudinary upload failed");
   }
 
-  if (!result?.secure_url) {
-    throw new Error("Cloudinary did not return an upload URL");
-  }
-
-  return result.secure_url;
+  const secure = result?.result?.secure_url || result?.result?.url;
+  if (!secure) throw new Error("Cloudinary did not return an upload URL");
+  return secure;
 }
 
 export default function ShowreelForm() {
@@ -87,7 +77,11 @@ export default function ShowreelForm() {
 
   return (
     <>
-      <div className={styles.formPanel}>
+      <div
+        className={styles.formPanel}
+        style={{ position: "relative" }}
+        aria-busy={loading}
+      >
         <h2>Showreel</h2>
         {error && (
           <div
@@ -103,7 +97,23 @@ export default function ShowreelForm() {
             {error}
           </div>
         )}
-        {loading && <Loader text="Updating showreel..." />}
+        {loading && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(255,255,255,0.85)",
+              zIndex: 20,
+              borderRadius: "8px",
+            }}
+            aria-hidden={false}
+          >
+            <Loader text="Updating showreel..." />
+          </div>
+        )}
         <form action={handleSubmit} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Showreel URL</label>
@@ -125,7 +135,12 @@ export default function ShowreelForm() {
               disabled={loading}
             />
           </div>
-          <button type="submit" className={styles.button} disabled={loading}>
+          <button
+            type="submit"
+            className={styles.button}
+            disabled={loading}
+            aria-disabled={loading}
+          >
             {loading ? "Saving..." : "Save Showreel"}
           </button>
         </form>
