@@ -19,7 +19,7 @@ export default function AboutPage() {
           <SplitTextReveal 
             elementType="p" 
             className={styles.paragraph}
-            text="Since 2010, Tales by VIVI is a creative production house. We create premium digital imagery and animation alongside world-class artists for ambitious brands!"
+            text="Since 2022, Tales by VIVI is a creative production house. We create premium digital imagery and animation alongside world-class artists for ambitious brands!"
             delay={0.6}
             stagger={0.02}
           />

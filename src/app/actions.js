@@ -156,18 +156,12 @@ export async function addArtist(formData) {
 
 export async function updateShowreel(formData) {
   const showreelUrl = formData.get("showreelUrl");
-  const uploaded = await uploadFiles(
-    formData.getAll("showreelVideo"),
-    "showreel",
-  );
-
-  const trimmedShowreelUrl = hasNonEmptyString(showreelUrl)
+  const resolvedShowreelUrl = hasNonEmptyString(showreelUrl)
     ? showreelUrl.trim()
     : null;
-  const resolvedShowreelUrl = trimmedShowreelUrl || uploaded[0]?.url || null;
 
   if (!resolvedShowreelUrl) {
-    throw new Error("Please provide a showreel URL or upload a video");
+    throw new Error("Please provide a showreel URL");
   }
 
   await db.setSiteSettings({ showreelUrl: resolvedShowreelUrl });

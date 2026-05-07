@@ -5,13 +5,39 @@ import styles from "../app/admin/admin.module.css";
 import Toast from "./Toast";
 import Loader from "./Loader";
 
-function isUploadableFile(value) {
-  return (
-    value &&
-    typeof value === "object" &&
-    typeof value.arrayBuffer === "function" &&
-    value.size > 0
+const cloudinaryCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const cloudinaryUploadPreset =
+  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+async function uploadVideoToCloudinary(file) {
+  if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
+    throw new Error(
+      "Missing Cloudinary upload settings. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.",
+    );
+  }
+
+  const uploadData = new FormData();
+  uploadData.append("file", file);
+  uploadData.append("upload_preset", cloudinaryUploadPreset);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/video/upload`,
+    {
+      method: "POST",
+      body: uploadData,
+    },
   );
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result?.error?.message || "Cloudinary upload failed");
+  }
+
+  if (!result?.secure_url) {
+    throw new Error("Cloudinary did not return an upload URL");
+  }
+
+  return result.secure_url;
 }
 
 export default function ShowreelForm() {
@@ -27,9 +53,12 @@ export default function ShowreelForm() {
     const showreelUrl = formData.get("showreelUrl");
     const hasShowreelUrl =
       typeof showreelUrl === "string" && showreelUrl.trim().length > 0;
-    const hasShowreelVideo = formData
-      .getAll("showreelVideo")
-      .some(isUploadableFile);
+    const showreelVideo = formData.get("showreelVideo");
+    const hasShowreelVideo =
+      showreelVideo &&
+      typeof showreelVideo === "object" &&
+      typeof showreelVideo.arrayBuffer === "function" &&
+      showreelVideo.size > 0;
 
     if (!hasShowreelUrl && !hasShowreelVideo) {
       setError("Please add a showreel URL or upload a video before saving.");
@@ -38,7 +67,13 @@ export default function ShowreelForm() {
 
     setLoading(true);
     try {
-      await updateShowreel(formData);
+      const resolvedShowreelUrl = hasShowreelUrl
+        ? showreelUrl.trim()
+        : await uploadVideoToCloudinary(showreelVideo);
+
+      const saveData = new FormData();
+      saveData.set("showreelUrl", resolvedShowreelUrl);
+      await updateShowreel(saveData);
       setSuccess("Showreel updated successfully!");
       setTimeout(() => {
         const form = formRef.current;

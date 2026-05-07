@@ -43,10 +43,17 @@ export async function uploadBuffer(
   if (folder) opts.folder = folder;
 
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(opts, (error, result) => {
+    const uploader =
+      resourceType === "video"
+        ? cloudinary.uploader.upload_chunked_stream
+        : cloudinary.uploader.upload_stream;
+    const stream = uploader(
+      resourceType === "video" ? { ...opts, chunk_size: 20 * 1024 * 1024 } : opts,
+      (error, result) => {
       if (error) reject(error);
       else resolve(result);
-    });
+      },
+    );
     Readable.from(buffer).pipe(stream);
   });
 }

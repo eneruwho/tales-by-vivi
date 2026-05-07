@@ -141,8 +141,6 @@ export default function ClientPage({
   const showreelRef = useRef(null);
   const showreelVideoRef = useRef(null);
   const showreelOverlayRef = useRef(null);
-  const showreelProgressBarRef = useRef(null);
-  const counterRef = useRef(null);
   const containerRef = useRef(null);
   const lastFamilyIdxRef = useRef(-1);
   const [activeFamilyIdx, setActiveFamilyIdx] = useState(0);
@@ -196,32 +194,7 @@ export default function ClientPage({
   const categories =
     Object.keys(catCounts).length > 0 ? catCounts : defaultCategories;
 
-  // GSAP scroll counter
-  useEffect(() => {
-    if (!counterRef.current || !containerRef.current) return;
 
-    const setProgressScale = showreelProgressBarRef.current
-      ? gsap.quickSetter(showreelProgressBarRef.current, "scaleX")
-      : null;
-
-    const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        trigger: containerRef.current,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 1,
-        onUpdate: (self) => {
-          if (counterRef.current) {
-            const val = Math.round(self.progress * 100);
-            counterRef.current.textContent = val.toString().padStart(2, "0");
-          }
-
-          setProgressScale?.(self.progress);
-        },
-      });
-    });
-    return () => ctx.revert();
-  }, []);
 
   useEffect(() => {
     if (
@@ -232,7 +205,6 @@ export default function ClientPage({
       return;
 
     const setVideoScale = gsap.quickSetter(showreelVideoRef.current, "scale");
-    const setVideoY = gsap.quickSetter(showreelVideoRef.current, "y", "px");
     const setVideoOpacity = gsap.quickSetter(
       showreelVideoRef.current,
       "opacity",
@@ -242,28 +214,20 @@ export default function ClientPage({
       "opacity",
     );
 
-    setVideoScale(0.88);
-    setVideoY(42);
-    setVideoOpacity(0.36);
-    setOverlayOpacity(0.34);
+    setVideoScale(1);
+    setVideoOpacity(1);
+    setOverlayOpacity(0.2);
 
     const trigger = ScrollTrigger.create({
       trigger: showreelRef.current,
       start: "top top",
-      end: "+=220%",
+      end: "+=100%",
       pin: true,
       pinSpacing: true,
       anticipatePin: 1,
-      scrub: 1,
       onUpdate: (self) => {
         const p = self.progress;
-        const visualProgress = Math.min(p / 0.28, 1);
-        setVideoScale(0.88 + visualProgress * 0.12);
-        setVideoY((1 - visualProgress) * 42);
-        setVideoOpacity(0.36 + visualProgress * 0.64);
-        setOverlayOpacity(0.34 - visualProgress * 0.16);
-
-        const nextStep = p < 0.28 ? 0 : p < 0.62 ? 1 : 2;
+        const nextStep = p < 0.5 ? 0 : 1;
         setShowreelCopyStep((prev) => (prev === nextStep ? prev : nextStep));
       },
     });
@@ -440,16 +404,13 @@ export default function ClientPage({
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.42, ease: "easeOut" }}
                   >
-                    <span className={styles.showreelCopyEyebrow}>
-                      The first frame
-                    </span>
                     <h2
                       className={`${styles.showreelHeading} ${styles.showreelHeadingMain}`}
                     >
-                      Tales by VIVI
+                      Tales <span className={styles.bySmall}>by</span> VIVI
                     </h2>
                   </motion.div>
-                ) : showreelCopyStep === 1 ? (
+                ) : (
                   <motion.div
                     key="showreel-copy-2"
                     className={styles.showreelCopyPanel}
@@ -458,32 +419,9 @@ export default function ClientPage({
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.42, ease: "easeOut" }}
                   >
-                    <span className={styles.showreelCopyEyebrow}>Showreel</span>
                     <h2 className={styles.showreelHeading}>
                       Chaos meets vision
                     </h2>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="showreel-copy-3"
-                    className={styles.showreelCopyPanel}
-                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -16, scale: 0.98 }}
-                    transition={{ duration: 0.42, ease: "easeOut" }}
-                  >
-                    <span className={styles.showreelCopyEyebrow}>Showreel</span>
-                    <h2 className={styles.showreelHeading}>
-                      Vision becomes real
-                    </h2>
-                    <Link
-                      href="/projects"
-                      className={styles.showreelCopyCta}
-                      data-cursor="hover"
-                    >
-                      Explore our works
-                      <span className={styles.heroBtnSquare} />
-                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -504,33 +442,7 @@ export default function ClientPage({
                 className={styles.showreelVidOverlay}
               />
             </motion.div>
-            <div className={styles.showreelMeta}>
-              <motion.h2
-                className={styles.showreelTitle}
-                initial={{ opacity: 0, scale: 0.9, y: 18 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              >
-                Showreel
-              </motion.h2>
-              <div className={styles.showreelDates}>
-                <span>2010</span>
-                <span className={styles.dateSep} />
-                <span className={styles.scrollCount} ref={counterRef}>
-                  00
-                </span>
-              </div>
-            </div>
-            <div className={styles.showreelProgressWrap}>
-              <span className={styles.showreelProgressLabel}>Progress</span>
-              <div className={styles.showreelProgressTrack}>
-                <div
-                  ref={showreelProgressBarRef}
-                  className={styles.showreelProgressBar}
-                />
-              </div>
-            </div>
+
           </motion.div>
         </section>
 

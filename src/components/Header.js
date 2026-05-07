@@ -9,40 +9,21 @@ import { useTheme } from "./ThemeProvider";
 
 export default function Header() {
   const pathname = usePathname();
-  const [times, setTimes] = useState({
-    paris: "00:00",
-    kolkata: "00:00",
-    texas: "00:00",
-  });
+  const [kolkataTime, setKolkataTime] = useState("00:00");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuHovered, setMenuHovered] = useState(false);
-  const [currentTzIndex, setCurrentTzIndex] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const menuCloseTimeoutRef = useRef(null);
 
   useEffect(() => {
     const updateClock = () => {
       const date = new Date();
-      const parisFormatter = new Intl.DateTimeFormat("fr-FR", {
-        timeZone: "Europe/Paris",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
       const kolkataFormatter = new Intl.DateTimeFormat("en-IN", {
         timeZone: "Asia/Kolkata",
         hour: "2-digit",
         minute: "2-digit",
       });
-      const texasFormatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/Chicago",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      setTimes({
-        paris: parisFormatter.format(date),
-        kolkata: kolkataFormatter.format(date),
-        texas: texasFormatter.format(date),
-      });
+      setKolkataTime(kolkataFormatter.format(date));
     };
     updateClock();
     const interval = setInterval(updateClock, 1000);
@@ -126,26 +107,9 @@ export default function Header() {
           />
         </Link>
         <div className={styles.headerRight}>
-          <div
-            className={styles.clock}
-            onClick={() => setCurrentTzIndex((prev) => (prev + 1) % 3)}
-            data-cursor="pointer"
-            style={{ cursor: "pointer" }}
-          >
-            <span className={styles.clockCity}>
-              {currentTzIndex === 0
-                ? "PARIS"
-                : currentTzIndex === 1
-                  ? "KOLKATA"
-                  : "TEXAS"}
-            </span>
-            <span className={styles.clockTime}>
-              {currentTzIndex === 0
-                ? times.paris
-                : currentTzIndex === 1
-                  ? times.kolkata
-                  : times.texas}
-            </span>
+          <div className={styles.clock}>
+            <span className={styles.clockCity}>KOLKATA</span>
+            <span className={styles.clockTime}>{kolkataTime}</span>
           </div>
         </div>
       </header>

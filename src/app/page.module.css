@@ -316,6 +316,12 @@
   line-height: 0.88;
 }
 
+.bySmall {
+  font-size: 0.55em;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+}
+
 .showreelCopyCta {
   display: inline-flex;
   align-items: center;
