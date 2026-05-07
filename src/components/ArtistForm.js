@@ -19,8 +19,9 @@ export default function ArtistForm({ initialArtists = [] }) {
     setSuccess(null);
     setLoading(true);
     try {
-      await addArtist(formData);
+      const created = await addArtist(formData);
       setSuccess("Artist added successfully!");
+      if (created) setArtists((prev) => [...prev, created]);
       setTimeout(() => {
         const form = formRef.current;
         if (form) form.reset();

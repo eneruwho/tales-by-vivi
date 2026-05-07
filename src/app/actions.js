@@ -141,8 +141,7 @@ export async function addArtist(formData) {
     formData.getAll("artistImage"),
     "artists",
   );
-
-  await db.addArtist({
+  const created = await db.addArtist({
     name,
     slug,
     slogan: formData.get("slogan") || null,
@@ -152,6 +151,8 @@ export async function addArtist(formData) {
 
   revalidatePath("/admin");
   revalidatePath("/artists");
+
+  return created;
 }
 
 export async function updateShowreel(formData) {

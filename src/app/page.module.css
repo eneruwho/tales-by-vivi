@@ -307,7 +307,8 @@
   text-transform: uppercase;
   font-weight: 400;
   color: var(--fg);
-  max-width: 12ch;
+  max-width: 20ch;
+  margin-bottom: 10px;
 }
 
 .showreelHeadingMain {
@@ -320,6 +321,16 @@
   font-size: 0.55em;
   font-weight: 300;
   letter-spacing: 0.08em;
+  margin-bottom: 0px;
+}
+
+.heroHeadingImg {
+  display: block;
+  max-width: min(92%, 1200px);
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 .showreelCopyCta {
@@ -791,7 +802,7 @@
 
 .catName {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 8vw, 9rem);
+  font-size: clamp(1.2rem, 4vw, 5rem);
   font-weight: 700;
   text-transform: uppercase;
   color: var(--color-grey-3);

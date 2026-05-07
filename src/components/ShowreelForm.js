@@ -6,8 +6,7 @@ import Toast from "./Toast";
 import Loader from "./Loader";
 
 const cloudinaryCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const cloudinaryUploadPreset =
-  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const cloudinaryUploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 async function uploadVideoToCloudinary(file) {
   if (!cloudinaryCloudName || !cloudinaryUploadPreset) {

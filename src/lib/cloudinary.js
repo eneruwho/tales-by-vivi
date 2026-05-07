@@ -48,10 +48,12 @@ export async function uploadBuffer(
         ? cloudinary.uploader.upload_chunked_stream
         : cloudinary.uploader.upload_stream;
     const stream = uploader(
-      resourceType === "video" ? { ...opts, chunk_size: 20 * 1024 * 1024 } : opts,
+      resourceType === "video"
+        ? { ...opts, chunk_size: 20 * 1024 * 1024 }
+        : opts,
       (error, result) => {
-      if (error) reject(error);
-      else resolve(result);
+        if (error) reject(error);
+        else resolve(result);
       },
     );
     Readable.from(buffer).pipe(stream);

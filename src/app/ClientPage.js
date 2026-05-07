@@ -404,11 +404,14 @@ export default function ClientPage({
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.42, ease: "easeOut" }}
                   >
-                    <h2
-                      className={`${styles.showreelHeading} ${styles.showreelHeadingMain}`}
-                    >
-                      Tales <span className={styles.bySmall}>by</span> VIVI
-                    </h2>
+                    <Image
+                      src="/hero-heading1.png"
+                      alt="Tales by VIVI"
+                      className={`${styles.heroHeadingImg} ${styles.showreelHeadingMain}`}
+                      width={1200}
+                      height={260}
+                      unoptimized
+                    />
                   </motion.div>
                 ) : (
                   <motion.div
@@ -419,9 +422,22 @@ export default function ClientPage({
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.42, ease: "easeOut" }}
                   >
-                    <h2 className={styles.showreelHeading}>
-                      Chaos meets vision
-                    </h2>
+                    <Image
+                      src="/hero-heading2.png"
+                      alt="Chaos meets vision"
+                      className={styles.heroHeadingImg}
+                      width={1200}
+                      height={220}
+                      unoptimized
+                    />
+                    <Link
+                      href="/projects"
+                      className={styles.showreelCopyCta}
+                      data-cursor="hover"
+                    >
+                      Explore our works
+                      <span className={styles.heroBtnSquare} />
+                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>

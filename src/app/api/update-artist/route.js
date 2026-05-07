@@ -1,5 +1,6 @@
 import * as db from "../../../../src/lib/db";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req) {
   try {
@@ -14,6 +15,13 @@ export async function POST(req) {
       bio: body.bio,
       imageUrl: body.imageUrl || null,
     });
+    // Revalidate relevant pages so the public artists list updates immediately
+    try {
+      revalidatePath('/artists');
+      revalidatePath('/');
+    } catch (e) {
+      // ignore; revalidation isn't critical if it fails
+    }
 
     return NextResponse.json({ success: true, artist: updated });
   } catch (err) {
