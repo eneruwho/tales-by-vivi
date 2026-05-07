@@ -1,11 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { updateShowreel } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import Toast from "./Toast";
 import Loader from "./Loader";
 
+function isUploadableFile(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    typeof value.arrayBuffer === "function" &&
+    value.size > 0
+  );
+}
+
 export default function ShowreelForm() {
+  const formRef = useRef(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,12 +23,25 @@ export default function ShowreelForm() {
   async function handleSubmit(formData) {
     setError(null);
     setSuccess(null);
+
+    const showreelUrl = formData.get("showreelUrl");
+    const hasShowreelUrl =
+      typeof showreelUrl === "string" && showreelUrl.trim().length > 0;
+    const hasShowreelVideo = formData
+      .getAll("showreelVideo")
+      .some(isUploadableFile);
+
+    if (!hasShowreelUrl && !hasShowreelVideo) {
+      setError("Please add a showreel URL or upload a video before saving.");
+      return;
+    }
+
     setLoading(true);
     try {
       await updateShowreel(formData);
       setSuccess("Showreel updated successfully!");
       setTimeout(() => {
-        const form = event.target;
+        const form = formRef.current;
         if (form) form.reset();
       }, 2000);
     } catch (err) {
@@ -47,7 +70,7 @@ export default function ShowreelForm() {
           </div>
         )}
         {loading && <Loader text="Updating showreel..." />}
-        <form action={handleSubmit}>
+        <form action={handleSubmit} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Showreel URL</label>
             <input

@@ -1,11 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addClientLogos, removeClientLogo } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import Toast from "./Toast";
 import Loader from "./Loader";
 
+function isUploadableFile(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    typeof value.arrayBuffer === "function" &&
+    value.size > 0
+  );
+}
+
 export default function ClientLogosForm({ initialLogos = [] }) {
+  const formRef = useRef(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -15,12 +25,22 @@ export default function ClientLogosForm({ initialLogos = [] }) {
   async function handleAddLogos(formData) {
     setError(null);
     setSuccess(null);
+
+    const hasClientLogos = formData
+      .getAll("clientLogos")
+      .some(isUploadableFile);
+
+    if (!hasClientLogos) {
+      setError("Please upload at least one client logo before saving.");
+      return;
+    }
+
     setLoading(true);
     try {
       await addClientLogos(formData);
       setSuccess("Client logos added successfully!");
       setTimeout(() => {
-        const form = event.target;
+        const form = formRef.current;
         if (form) form.reset();
       }, 2000);
     } catch (err) {
@@ -67,7 +87,7 @@ export default function ClientLogosForm({ initialLogos = [] }) {
           </div>
         )}
         {loading && <Loader text="Uploading logos..." />}
-        <form action={handleAddLogos}>
+        <form action={handleAddLogos} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Upload Client Logos</label>
             <input

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addProject } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import ArtistSelect from "./ArtistSelect";
@@ -7,6 +7,7 @@ import Toast from "./Toast";
 import Loader from "./Loader";
 
 export default function ProjectForm({ artists }) {
+  const formRef = useRef(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ export default function ProjectForm({ artists }) {
       setSuccess("Project added successfully!");
       // Reset form after 2 seconds
       setTimeout(() => {
-        const form = event.target;
+        const form = formRef.current;
         if (form) form.reset();
       }, 2000);
     } catch (err) {
@@ -49,7 +50,7 @@ export default function ProjectForm({ artists }) {
           </div>
         )}
         {loading && <Loader text="Adding project..." />}
-        <form action={handleSubmit}>
+        <form action={handleSubmit} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Title</label>
             <input

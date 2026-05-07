@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addArtist, deleteArtist } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import ArtistEditInline from "./ArtistEditInline";
@@ -7,6 +7,7 @@ import Toast from "./Toast";
 import Loader from "./Loader";
 
 export default function ArtistForm({ initialArtists = [] }) {
+  const formRef = useRef(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export default function ArtistForm({ initialArtists = [] }) {
       await addArtist(formData);
       setSuccess("Artist added successfully!");
       setTimeout(() => {
-        const form = event.target;
+        const form = formRef.current;
         if (form) form.reset();
       }, 2000);
     } catch (err) {
@@ -64,7 +65,7 @@ export default function ArtistForm({ initialArtists = [] }) {
           </div>
         )}
         {loading && <Loader text="Adding artist..." />}
-        <form action={handleAddArtist}>
+        <form action={handleAddArtist} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Artist Name</label>
             <input

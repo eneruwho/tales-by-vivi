@@ -52,6 +52,10 @@ function isUploadableFile(value) {
   );
 }
 
+function hasNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 async function uploadFiles(values, folder) {
   const files = values.filter(isUploadableFile);
   if (files.length === 0) return [];
@@ -151,12 +155,22 @@ export async function addArtist(formData) {
 }
 
 export async function updateShowreel(formData) {
+  const showreelUrl = formData.get("showreelUrl");
   const uploaded = await uploadFiles(
     formData.getAll("showreelVideo"),
     "showreel",
   );
-  const showreelUrl = formData.get("showreelUrl") || uploaded[0]?.url || null;
-  await db.setSiteSettings({ showreelUrl });
+
+  const trimmedShowreelUrl = hasNonEmptyString(showreelUrl)
+    ? showreelUrl.trim()
+    : null;
+  const resolvedShowreelUrl = trimmedShowreelUrl || uploaded[0]?.url || null;
+
+  if (!resolvedShowreelUrl) {
+    throw new Error("Please provide a showreel URL or upload a video");
+  }
+
+  await db.setSiteSettings({ showreelUrl: resolvedShowreelUrl });
   revalidatePath("/");
   revalidatePath("/admin");
 }
@@ -166,6 +180,11 @@ export async function addClientLogos(formData) {
     formData.getAll("clientLogos"),
     "client_images",
   );
+
+  if (uploaded.length === 0) {
+    throw new Error("Please upload at least one client logo");
+  }
+
   await db.addClientLogos(uploaded);
   revalidatePath("/");
   revalidatePath("/admin");
