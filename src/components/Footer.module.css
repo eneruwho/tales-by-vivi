@@ -250,7 +250,7 @@
   text-stroke: 1.5px rgba(255, 255, 255, 0.12);
   -webkit-user-select: none;
   user-select: none;
-  pointer-events: none;
+  pointer-events: auto;
   margin-top: 3rem;
 }
 
@@ -262,6 +262,30 @@
 .bigLogoChar {
   display: inline-block;
   animation: footerCharFloat 3.6s ease-in-out infinite;
+}
+
+/* Fill-on-hover + morph effect */
+.bigLogoChar {
+  position: relative;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(200, 200, 200, 0.65);
+  text-stroke: 1.5px rgba(200, 200, 200, 0.65);
+  /* Solid white fill when active — uses background-clip to apply text color */
+  background: linear-gradient(90deg, var(--color-white), var(--color-white));
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-size: 0% 100%;
+  background-repeat: no-repeat;
+  transition:
+    background-size 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.35s ease;
+  pointer-events: none; /* block-only hover (disable per-char hover) */
+}
+
+/* Hover whole logo to fill (block-only) */
+.bigLogo:hover .bigLogoChar {
+  background-size: 100% 100%;
+  transform: translateY(-4px);
 }
 
 .bigLogoChar:nth-child(2n) {
