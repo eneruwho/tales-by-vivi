@@ -49,7 +49,7 @@ export default function ArtistForm({ initialArtists = [] }) {
 
   return (
     <>
-      <div className={styles.formPanel}>
+      <div className={styles.formPanel} style={{ position: "relative" }} aria-busy={loading}>
         <h2>Add New Artist</h2>
         {error && (
           <div
@@ -65,7 +65,23 @@ export default function ArtistForm({ initialArtists = [] }) {
             {error}
           </div>
         )}
-        {loading && <Loader text="Adding artist..." />}
+        {loading && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(255,255,255,0.85)",
+              zIndex: 20,
+              borderRadius: "8px",
+            }}
+            aria-hidden={false}
+          >
+            <Loader text="Adding artist..." />
+          </div>
+        )}
         <form action={handleAddArtist} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Artist Name</label>

@@ -33,7 +33,7 @@ export default function ProjectForm({ artists }) {
 
   return (
     <>
-      <div className={styles.formPanel}>
+      <div className={styles.formPanel} style={{ position: "relative" }} aria-busy={loading}>
         <h2>Add New Project</h2>
         {error && (
           <div
@@ -49,7 +49,23 @@ export default function ProjectForm({ artists }) {
             {error}
           </div>
         )}
-        {loading && <Loader text="Adding project..." />}
+        {loading && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(255,255,255,0.85)",
+              zIndex: 20,
+              borderRadius: "8px",
+            }}
+            aria-hidden={false}
+          >
+            <Loader text="Adding project..." />
+          </div>
+        )}
         <form action={handleSubmit} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Title</label>

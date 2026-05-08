@@ -70,7 +70,7 @@ export default function ClientLogosForm({ initialLogos = [] }) {
 
   return (
     <>
-      <div className={styles.formPanel}>
+      <div className={styles.formPanel} style={{ position: "relative" }} aria-busy={loading}>
         <h2>Client Logos</h2>
         {error && (
           <div
@@ -86,7 +86,23 @@ export default function ClientLogosForm({ initialLogos = [] }) {
             {error}
           </div>
         )}
-        {loading && <Loader text="Uploading logos..." />}
+        {loading && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(255,255,255,0.85)",
+              zIndex: 20,
+              borderRadius: "8px",
+            }}
+            aria-hidden={false}
+          >
+            <Loader text="Uploading logos..." />
+          </div>
+        )}
         <form action={handleAddLogos} ref={formRef}>
           <div className={styles.inputGroup}>
             <label>Upload Client Logos</label>
