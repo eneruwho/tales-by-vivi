@@ -136,18 +136,6 @@ export default function ProjectForm({ artists }) {
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Project Videos Upload</label>
-            <input
-              type="file"
-              name="projectVideos"
-              accept="video/*"
-              multiple
-              className={styles.input}
-              disabled={loading}
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
             <label>Description (Optional)</label>
             <textarea
               name="description"

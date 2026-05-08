@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'Remove project videos upload from add/edit project forms *)"
+    ]
+  }
+}

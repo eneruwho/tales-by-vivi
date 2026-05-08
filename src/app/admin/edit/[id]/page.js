@@ -144,17 +144,6 @@ export default async function EditProjectPage({ params }) {
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Upload New Project Videos</label>
-            <input
-              type="file"
-              name="projectVideos"
-              accept="video/*"
-              multiple
-              className={styles.input}
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
             <label>Description (Optional)</label>
             <textarea
               name="description"
