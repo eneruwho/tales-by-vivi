@@ -3,12 +3,13 @@ import styles from "../../admin.module.css";
 import { getProjects, updateProject } from "../../../actions";
 
 export default async function EditProjectPage({ params }) {
-  const id = Number(params.id);
+  const { id } = await params;
+  const numId = Number(id);
   let projects = [];
   let project = null;
   try {
     projects = await getProjects();
-    project = projects.find((p) => Number(p.id) === id) || null;
+    project = projects.find((p) => Number(p.id) === numId) || null;
   } catch (err) {
     // Log server-side for debugging and show a helpful message in UI
     console.error(
@@ -33,7 +34,7 @@ export default async function EditProjectPage({ params }) {
     return (
       <div style={{ padding: "3rem" }}>
         <h2>Project not found</h2>
-        <p>The project with id {id} could not be found.</p>
+        <p>The project with id {numId} could not be found.</p>
         <p>
           <Link href="/admin">Back to Admin</Link>
         </p>
@@ -43,7 +44,7 @@ export default async function EditProjectPage({ params }) {
 
   const action = async (formData) => {
     "use server";
-    await updateProject(id, formData);
+    await updateProject(numId, formData);
   };
 
   return (
