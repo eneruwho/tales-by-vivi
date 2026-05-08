@@ -49,14 +49,7 @@ export default function ArtistProfileClient({ artist, projects }) {
       </Link>
 
       <section className={styles.hero} ref={heroRef}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(260px, 360px) 1fr",
-            gap: "2rem",
-            alignItems: "start",
-          }}
-        >
+        <div className={styles.heroGrid}>
           <div className={styles.heroImage}>
             <img
               src={artist.imageUrl || placeholderImage}

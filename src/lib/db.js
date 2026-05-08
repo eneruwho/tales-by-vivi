@@ -1,108 +1,10 @@
-import fs from "fs/promises";
-import path from "path";
-import firestore from "./firestore";
+import firestore from "./firestore.js";
 import {
   createFallbackClientLogos,
   mergeClientLogos,
   normalizeClientLogoItems,
-} from "./clientLogos";
-import { destroyByPublicId, listFolderResources } from "./cloudinary";
-
-const dataPath = path.join(process.cwd(), "data.json");
-
-const emptyStore = {
-  projects: [],
-  artists: [],
-  siteSettings: {},
-  clientLogos: [],
-};
-
-function isFileStoreEnabled() {
-  const raw = String(process.env.USE_FILE_DB || "")
-    .trim()
-    .toLowerCase();
-  return raw === "1" || raw === "true" || raw === "yes";
-}
-
-function assertFileStoreEnabled() {
-  if (isFileStoreEnabled()) return;
-  throw new Error(
-    "File DB fallback is disabled. Configure Firestore credentials or set USE_FILE_DB=true to enable data.json fallback.",
-  );
-}
-
-async function ensureStore() {
-  assertFileStoreEnabled();
-  try {
-    await fs.access(dataPath);
-  } catch {
-    try {
-      await fs.writeFile(dataPath, JSON.stringify(emptyStore, null, 2), "utf8");
-    } catch (err) {
-      console.error("db.ensureStore: failed to create data file", {
-        path: dataPath,
-        code: err && err.code,
-        message: err && err.message,
-      });
-      throw new Error(
-        `Persistent storage unavailable: cannot create ${dataPath} (${err && err.code}). Use an external DB in production.`,
-      );
-    }
-  }
-}
-
-async function readStore() {
-  assertFileStoreEnabled();
-  await ensureStore();
-  const raw = await fs.readFile(dataPath, "utf8");
-
-  try {
-    const parsed = JSON.parse(raw);
-    return {
-      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
-      artists: Array.isArray(parsed.artists) ? parsed.artists : [],
-      siteSettings:
-        parsed.siteSettings && typeof parsed.siteSettings === "object"
-          ? parsed.siteSettings
-          : {},
-      clientLogos: Array.isArray(parsed.clientLogos) ? parsed.clientLogos : [],
-    };
-  } catch {
-    return { ...emptyStore };
-  }
-}
-
-async function writeStore(store) {
-  assertFileStoreEnabled();
-  try {
-    await fs.writeFile(dataPath, JSON.stringify(store, null, 2), "utf8");
-  } catch (err) {
-    console.error("db.writeStore: failed to write data file", {
-      path: dataPath,
-      code: err && err.code,
-      message: err && err.message,
-    });
-    throw new Error(
-      `Persistent storage unavailable: cannot write to ${dataPath} (${err && err.code}). Use an external DB in production.`,
-    );
-  }
-}
-
-function getNextId(items) {
-  return (
-    items.reduce((maxId, item) => {
-      const id = Number(item.id) || 0;
-      return Math.max(maxId, id);
-    }, 0) + 1
-  );
-}
-
-async function getNextIdFirestore(collection) {
-  const q = await collection.orderBy("id", "desc").limit(1).get();
-  if (q.empty) return 1;
-  const d = q.docs[0].data();
-  return Number(d.id || 0) + 1;
-}
+} from "./clientLogos.js";
+import { listFolderResources, destroyByPublicId } from "./cloudinary.js";
 
 function isFirestoreReady() {
   return Boolean(firestore && firestore.db && firestore.collections);
@@ -112,19 +14,18 @@ function toDoc(data) {
   return data ? { id: data.id, ...data } : null;
 }
 
-export async function getProjects() {
-  if (isFirestoreReady()) {
-    const snap = await firestore.collections.projects.get();
-    const projects = snap.docs.map((doc) => toDoc(doc.data()));
-    return projects.sort((a, b) => {
-      const aTime = new Date(a.createdAt || 0).getTime();
-      const bTime = new Date(b.createdAt || 0).getTime();
-      return bTime - aTime;
-    });
-  }
+async function getNextIdFirestore(collection) {
+  const q = await collection.orderBy("id", "desc").limit(1).get();
+  if (q.empty) return 1;
+  const d = q.docs[0].data();
+  return Number(d.id || 0) + 1;
+}
 
-  const store = await readStore();
-  return [...store.projects].sort((a, b) => {
+export async function getProjects() {
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const snap = await firestore.collections.projects.get();
+  const projects = snap.docs.map((doc) => toDoc(doc.data()));
+  return projects.sort((a, b) => {
     const aTime = new Date(a.createdAt || 0).getTime();
     const bTime = new Date(b.createdAt || 0).getTime();
     return bTime - aTime;
@@ -132,153 +33,88 @@ export async function getProjects() {
 }
 
 export async function getProjectBySlug(slug) {
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.projects
-      .where("slug", "==", slug)
-      .limit(1)
-      .get();
-    if (q.empty) return null;
-    return toDoc(q.docs[0].data());
-  }
-
-  const store = await readStore();
-  return store.projects.find((project) => project.slug === slug) || null;
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const q = await firestore.collections.projects
+    .where("slug", "==", slug)
+    .limit(1)
+    .get();
+  if (q.empty) return null;
+  return toDoc(q.docs[0].data());
 }
 
 export async function getArtists() {
-  if (isFirestoreReady()) {
-    const snap = await firestore.collections.artists.get();
-    const artists = snap.docs.map((doc) => toDoc(doc.data()));
-    return artists.sort((a, b) =>
-      String(a.name || "").localeCompare(String(b.name || "")),
-    );
-  }
-
-  const store = await readStore();
-  return [...store.artists].sort((a, b) =>
-    String(a.name || "").localeCompare(String(b.name || "")),
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const snap = await firestore.collections.artists.get();
+  const artists = snap.docs.map((doc) => toDoc(doc.data()));
+  return artists.sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""))
   );
 }
 
 export async function getArtistBySlug(slug) {
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.artists
-      .where("slug", "==", slug)
-      .limit(1)
-      .get();
-    if (q.empty) return null;
-    return toDoc(q.docs[0].data());
-  }
-
-  const store = await readStore();
-  return store.artists.find((artist) => artist.slug === slug) || null;
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const q = await firestore.collections.artists
+    .where("slug", "==", slug)
+    .limit(1)
+    .get();
+  if (q.empty) return null;
+  return toDoc(q.docs[0].data());
 }
 
 export async function getProjectsByArtist(artistSlug) {
-  if (isFirestoreReady()) {
-    const snap = await firestore.collections.projects
-      .where("artistSlug", "==", artistSlug)
-      .get();
-    return snap.docs.map((doc) => toDoc(doc.data()));
-  }
-
-  const store = await readStore();
-  return store.projects.filter((project) => project.artistSlug === artistSlug);
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const snap = await firestore.collections.projects
+    .where("artistSlug", "==", artistSlug)
+    .get();
+  return snap.docs.map((doc) => toDoc(doc.data()));
 }
 
 export async function addProject(input) {
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.projects
-      .where("slug", "==", input.slug)
-      .limit(1)
-      .get();
-    if (!q.empty) throw new Error(`Project slug already exists: ${input.slug}`);
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const q = await firestore.collections.projects
+    .where("slug", "==", input.slug)
+    .limit(1)
+    .get();
+  if (!q.empty) throw new Error(`Project slug already exists: ${input.slug}`);
 
-    const nextId = await getNextIdFirestore(firestore.collections.projects);
-    const project = {
-      id: nextId,
-      title: input.title,
-      slug: input.slug,
-      category: input.category,
-      imageUrl: input.imageUrl,
-      imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
-      videoUrl: input.videoUrl ?? null,
-      videoUrls: Array.isArray(input.videoUrls) ? input.videoUrls : [],
-      description: input.description ?? null,
-      artist: input.artist,
-      artistSlug: input.artistSlug,
-      createdAt: new Date().toISOString(),
-    };
-    await firestore.collections.projects.add(project);
-    return project;
-  }
-
-  const store = await readStore();
-
-  if (store.projects.some((project) => project.slug === input.slug)) {
-    throw new Error(`Project slug already exists: ${input.slug}`);
-  }
+  const nextId = await getNextIdFirestore(firestore.collections.projects);
 
   const project = {
-    id: getNextId(store.projects),
+    id: nextId,
     title: input.title,
     slug: input.slug,
-    category: input.category,
-    imageUrl: input.imageUrl,
+    categories: Array.isArray(input.categories) ? input.categories : [],
+    imageUrl: input.imageUrl ?? null,
     imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
+    previewImageUrl: input.previewImageUrl ?? null,
     videoUrl: input.videoUrl ?? null,
     videoUrls: Array.isArray(input.videoUrls) ? input.videoUrls : [],
+    youtubeUrl: input.youtubeUrl ?? null,
     description: input.description ?? null,
     artist: input.artist,
     artistSlug: input.artistSlug,
     createdAt: new Date().toISOString(),
   };
-
-  store.projects.push(project);
-  await writeStore(store);
-
+  await firestore.collections.projects.add(project);
   return project;
 }
 
 export async function addArtist(input) {
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.artists
-      .where("slug", "==", input.slug)
-      .limit(1)
-      .get();
-    if (!q.empty) throw new Error(`Artist slug already exists: ${input.slug}`);
-    const q2 = await firestore.collections.artists
-      .where("name", "==", input.name)
-      .limit(1)
-      .get();
-    if (!q2.empty) throw new Error(`Artist name already exists: ${input.name}`);
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const q = await firestore.collections.artists
+    .where("slug", "==", input.slug)
+    .limit(1)
+    .get();
+  if (!q.empty) throw new Error(`Artist slug already exists: ${input.slug}`);
+  const q2 = await firestore.collections.artists
+    .where("name", "==", input.name)
+    .limit(1)
+    .get();
+  if (!q2.empty) throw new Error(`Artist name already exists: ${input.name}`);
 
-    const nextId = await getNextIdFirestore(firestore.collections.artists);
-    const artist = {
-      id: nextId,
-      name: input.name,
-      slug: input.slug,
-      slogan: input.slogan ?? null,
-      bio: input.bio ?? null,
-      imageUrl: input.imageUrl ?? null,
-      createdAt: new Date().toISOString(),
-    };
-    await firestore.collections.artists.add(artist);
-    return artist;
-  }
-
-  const store = await readStore();
-
-  if (store.artists.some((artist) => artist.slug === input.slug)) {
-    throw new Error(`Artist slug already exists: ${input.slug}`);
-  }
-
-  if (store.artists.some((artist) => artist.name === input.name)) {
-    throw new Error(`Artist name already exists: ${input.name}`);
-  }
-
+  const nextId = await getNextIdFirestore(firestore.collections.artists);
   const artist = {
-    id: getNextId(store.artists),
+    id: nextId,
     name: input.name,
     slug: input.slug,
     slogan: input.slogan ?? null,
@@ -286,68 +122,34 @@ export async function addArtist(input) {
     imageUrl: input.imageUrl ?? null,
     createdAt: new Date().toISOString(),
   };
-
-  store.artists.push(artist);
-  await writeStore(store);
-
+  await firestore.collections.artists.add(artist);
   return artist;
 }
 
 export async function deleteArtist(id) {
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
   const numericId = Number(id);
-
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.artists
-      .where("id", "==", numericId)
-      .limit(1)
-      .get();
-    if (q.empty) return false;
-    await q.docs[0].ref.delete();
-    return true;
-  }
-
-  const store = await readStore();
-  const initialLength = store.artists.length;
-  store.artists = store.artists.filter(
-    (artist) => Number(artist.id) !== numericId,
-  );
-  if (store.artists.length === initialLength) return false;
-  await writeStore(store);
+  const q = await firestore.collections.artists
+    .where("id", "==", numericId)
+    .limit(1)
+    .get();
+  if (q.empty) return false;
+  await q.docs[0].ref.delete();
   return true;
 }
 
 export async function updateArtist(id, input) {
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
   const numericId = Number(id);
+  const q = await firestore.collections.artists
+    .where("id", "==", numericId)
+    .limit(1)
+    .get();
+  if (q.empty) throw new Error(`Artist not found: ${id}`);
 
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.artists
-      .where("id", "==", numericId)
-      .limit(1)
-      .get();
-    if (q.empty) throw new Error(`Artist not found: ${id}`);
-
-    const docRef = q.docs[0].ref;
-    const existing = q.docs[0].data();
-    const updated = {
-      ...existing,
-      name: input.name,
-      slug: input.slug,
-      slogan: input.slogan ?? existing.slogan,
-      bio: input.bio ?? existing.bio,
-      imageUrl: input.imageUrl ?? existing.imageUrl ?? null,
-      id: existing.id,
-      createdAt: existing.createdAt,
-    };
-    await docRef.update(updated);
-    return updated;
-  }
-
-  const store = await readStore();
-  const idx = store.artists.findIndex((a) => Number(a.id) === numericId);
-  if (idx === -1) throw new Error(`Artist not found: ${id}`);
-
-  const existing = store.artists[idx];
-  store.artists[idx] = {
+  const docRef = q.docs[0].ref;
+  const existing = q.docs[0].data();
+  const updated = {
     ...existing,
     name: input.name,
     slug: input.slug,
@@ -357,146 +159,74 @@ export async function updateArtist(id, input) {
     id: existing.id,
     createdAt: existing.createdAt,
   };
-
-  await writeStore(store);
-  return store.artists[idx];
+  await docRef.update(updated);
+  return updated;
 }
 
 export async function updateProject(id, input) {
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
   const numericId = Number(id);
 
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.projects
-      .where("id", "==", numericId)
-      .limit(1)
-      .get();
-    if (q.empty) throw new Error(`Project not found: ${id}`);
+  const q = await firestore.collections.projects
+    .where("id", "==", numericId)
+    .limit(1)
+    .get();
+  if (q.empty) throw new Error(`Project not found: ${id}`);
 
-    const docRef = q.docs[0].ref;
-    const existing = q.docs[0].data();
+  const docRef = q.docs[0].ref;
+  const existing = q.docs[0].data();
 
-    const slugQ = await firestore.collections.projects
-      .where("slug", "==", input.slug)
-      .get();
-    if (!slugQ.empty) {
-      const conflict = slugQ.docs.find((doc) => doc.data().id !== numericId);
-      if (conflict)
-        throw new Error(`Project slug already exists: ${input.slug}`);
-    }
-
-    const updated = {
-      ...existing,
-      title: input.title,
-      slug: input.slug,
-      category: input.category,
-      imageUrl: input.imageUrl,
-      imageUrls: Array.isArray(input.imageUrls)
-        ? input.imageUrls
-        : existing.imageUrls || [],
-      videoUrl: input.videoUrl ?? null,
-      videoUrls: Array.isArray(input.videoUrls)
-        ? input.videoUrls
-        : existing.videoUrls || [],
-      description: input.description ?? null,
-      artist: input.artist,
-      artistSlug: input.artistSlug,
-      id: existing.id,
-      createdAt: existing.createdAt,
-    };
-    await docRef.update(updated);
-    return updated;
+  const slugQ = await firestore.collections.projects
+    .where("slug", "==", input.slug)
+    .get();
+  if (!slugQ.empty) {
+    const conflict = slugQ.docs.find((doc) => doc.data().id !== numericId);
+    if (conflict)
+      throw new Error(`Project slug already exists: ${input.slug}`);
   }
 
-  const store = await readStore();
-  const projectIndex = store.projects.findIndex(
-    (project) => Number(project.id) === numericId,
-  );
-  if (projectIndex === -1) {
-    throw new Error(`Project not found: ${id}`);
-  }
-
-  const slugTaken = store.projects.some(
-    (project) =>
-      project.slug === input.slug && Number(project.id) !== numericId,
-  );
-  if (slugTaken) {
-    throw new Error(`Project slug already exists: ${input.slug}`);
-  }
-
-  const existing = store.projects[projectIndex];
-  store.projects[projectIndex] = {
+  const updated = {
     ...existing,
     title: input.title,
     slug: input.slug,
-    category: input.category,
-    imageUrl: input.imageUrl,
-    imageUrls: Array.isArray(input.imageUrls)
-      ? input.imageUrls
-      : existing.imageUrls || [],
+    categories: Array.isArray(input.categories) ? input.categories : existing.categories || [],
+    imageUrl: input.imageUrl ?? null,
+    imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : existing.imageUrls || [],
+    previewImageUrl: input.previewImageUrl ?? existing.previewImageUrl ?? null,
     videoUrl: input.videoUrl ?? null,
-    videoUrls: Array.isArray(input.videoUrls)
-      ? input.videoUrls
-      : existing.videoUrls || [],
+    videoUrls: Array.isArray(input.videoUrls) ? input.videoUrls : existing.videoUrls || [],
+    youtubeUrl: input.youtubeUrl ?? existing.youtubeUrl ?? null,
     description: input.description ?? null,
     artist: input.artist,
     artistSlug: input.artistSlug,
     id: existing.id,
     createdAt: existing.createdAt,
   };
-
-  await writeStore(store);
-  return store.projects[projectIndex];
+  await docRef.update(updated);
+  return updated;
 }
 
 export async function deleteProject(id) {
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
   const numericId = Number(id);
-
-  if (isFirestoreReady()) {
-    const q = await firestore.collections.projects
-      .where("id", "==", numericId)
-      .limit(1)
-      .get();
-    if (q.empty) return false;
-    await q.docs[0].ref.delete();
-    return true;
-  }
-
-  const store = await readStore();
-  const initialLength = store.projects.length;
-  store.projects = store.projects.filter(
-    (project) => Number(project.id) !== numericId,
-  );
-
-  if (store.projects.length === initialLength) {
-    return false;
-  }
-
-  await writeStore(store);
+  const q = await firestore.collections.projects
+    .where("id", "==", numericId)
+    .limit(1)
+    .get();
+  if (q.empty) return false;
+  await q.docs[0].ref.delete();
   return true;
 }
 
 export async function getSiteSettings() {
-  if (isFirestoreReady()) {
-    const settings = await firestore.getSiteSettings();
-    return settings || {};
-  }
-
-  const store = await readStore();
-  return store.siteSettings || {};
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  const settings = await firestore.getSiteSettings();
+  return settings || {};
 }
 
 export async function setSiteSettings(updates) {
-  if (isFirestoreReady()) {
-    return firestore.setSiteSettings(updates);
-  }
-
-  const store = await readStore();
-  store.siteSettings = {
-    ...(store.siteSettings || {}),
-    ...(updates || {}),
-  };
-  await writeStore(store);
-  return store.siteSettings;
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  return firestore.setSiteSettings(updates);
 }
 
 export async function getClientLogos() {
@@ -508,20 +238,12 @@ export async function getClientLogos() {
       (item) => ({
         ...item,
         source: "cloudinary",
-      }),
+      })
     );
     return mergeClientLogos(fallbacks, cloudinaryLogos);
   } catch {
-    if (isFirestoreReady()) {
-      const logos = await firestore.getClientLogos();
-      return mergeClientLogos(fallbacks, normalizeClientLogoItems(logos));
-    }
-
-    const store = await readStore();
-    return mergeClientLogos(
-      fallbacks,
-      normalizeClientLogoItems(store.clientLogos || []),
-    );
+    const logos = await firestore.getClientLogos();
+    return mergeClientLogos(fallbacks, normalizeClientLogoItems(logos));
   }
 }
 
@@ -535,12 +257,8 @@ export async function addClientLogos(logos) {
     })
     .filter(Boolean);
 
-  if (isFirestoreReady()) {
-    await firestore.addClientLogos(normalized);
-    return firestore.getClientLogos();
-  }
-
-  return normalized;
+  await firestore.addClientLogos(normalized);
+  return firestore.getClientLogos();
 }
 
 export async function deleteClientLogo(publicId) {
@@ -552,14 +270,12 @@ export async function deleteClientLogo(publicId) {
     console.warn("deleteClientLogo: cloudinary delete failed", error?.message);
   }
 
-  if (isFirestoreReady()) {
-    const snap = await firestore.collections.clients
-      .where("publicId", "==", publicId)
-      .limit(1)
-      .get();
-    if (!snap.empty) {
-      await snap.docs[0].ref.delete();
-    }
+  const snap = await firestore.collections.clients
+    .where("publicId", "==", publicId)
+    .limit(1)
+    .get();
+  if (!snap.empty) {
+    await snap.docs[0].ref.delete();
   }
 
   return true;

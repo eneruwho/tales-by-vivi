@@ -1,6 +1,6 @@
 .main {
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: var(--bg);
   overflow: hidden;
   transition: background-color 0.3s ease;
@@ -140,4 +140,52 @@
   min-height: 220px;
   object-fit: cover;
   display: block;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.2rem;
+  }
+
+  .categories {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 3rem 4vw 2.2rem;
+    gap: 1.4rem;
+  }
+
+  .description {
+    font-size: 1rem;
+  }
+
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .thumbImage,
+  .thumbVideo {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .closeBtn {
+    top: 1.2rem;
+    right: 1rem;
+  }
+
+  .content {
+    padding: 2.4rem 1rem 1.4rem;
+  }
+
+  .categoryPill {
+    font-size: 0.68rem;
+    padding: 0.42rem 0.82rem;
+  }
 }

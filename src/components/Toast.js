@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import styles from "../app/admin/admin.module.css";
 
 export default function Toast({
   message,
@@ -43,14 +42,17 @@ export default function Toast({
     <div
       style={{
         position: "fixed",
-        bottom: "20px",
-        right: "20px",
+        bottom: "max(12px, env(safe-area-inset-bottom))",
+        right: "12px",
+        left: "12px",
         padding: "1rem",
         backgroundColor: bgColor,
         color: textColor,
         borderRadius: "8px",
         boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-        maxWidth: "400px",
+        maxWidth: "min(400px, calc(100vw - 24px))",
+        width: "fit-content",
+        marginLeft: "auto",
         zIndex: 9999,
         animation: "slideIn 0.3s ease-out",
       }}

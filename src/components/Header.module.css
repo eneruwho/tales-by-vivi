@@ -265,3 +265,116 @@
 [data-theme="light"] .header {
   mix-blend-mode: normal;
 }
+
+@media (max-width: 768px) {
+  .header {
+    padding: 1.25rem 4vw;
+  }
+
+  .pillContainer {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 1rem;
+    transform: none;
+    justify-content: center;
+  }
+
+  .menuPill {
+    min-width: 0;
+    width: auto;
+    max-width: calc(100vw - 0.75rem - 0.75rem - 52px - 12px);
+  }
+
+  .menuBtn {
+    padding: 0 1.2rem;
+  }
+
+  .navLinks {
+    max-width: calc(100vw - 0.75rem - 0.75rem - 52px - 12px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .navLinks::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navItem {
+    padding: 0 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .closeBtn {
+    padding: 0 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .clock {
+    display: none;
+  }
+
+  .headerRight {
+    gap: 0;
+  }
+
+  .themeToggle {
+    width: 48px;
+    height: 48px;
+  }
+
+  .menuPill {
+    height: 48px;
+    max-width: calc(100vw - 0.75rem - 0.75rem - 48px - 10px);
+  }
+
+  /* Make menu vertical on small screens */
+  .navLinks {
+    max-width: calc(100vw - 0.75rem - 0.75rem - 48px - 10px);
+    padding: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    height: auto;
+  }
+
+  .menuPill {
+    /* Allow the pill to grow vertically when menu opens */
+    align-items: stretch;
+    padding: 0.25rem;
+  }
+
+  .navItemWrap {
+    height: auto;
+    display: block;
+  }
+
+  .navItem {
+    display: block;
+    padding: 0.6rem 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.82rem;
+  }
+
+  .closeBtn {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    height: auto;
+  }
+
+  /* Helper class applied from JS to force vertical layout if needed */
+  .mobileNav {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .menuBtn,
+  .closeBtn {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+}

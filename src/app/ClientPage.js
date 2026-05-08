@@ -421,7 +421,7 @@ export default function ClientPage({
                       unoptimized
                     />
                     <Link
-                      href="/projects"
+                      href="/artists"
                       className={styles.showreelCopyCta}
                       data-cursor="hover"
                     >

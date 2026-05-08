@@ -1,6 +1,6 @@
 .main {
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
   position: relative;
   background: var(--bg);
@@ -125,6 +125,28 @@
   object-fit: cover;
 }
 
+.projectNameOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  padding: 2rem 1.5rem 1.5rem;
+  display: flex;
+  align-items: flex-end;
+  min-height: 80px;
+}
+
+.projectName {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .placeholderMedia {
   width: 100%;
   height: 100%;
@@ -161,4 +183,64 @@
 .activeDot {
   background: var(--fg);
   height: 24px;
+}
+
+@media (max-width: 1024px) {
+  .foreground {
+    grid-template-columns: 280px 1fr 72px;
+  }
+
+  .link {
+    font-size: 0.98rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    min-height: 100svh;
+    height: auto;
+  }
+
+  .massiveBgText {
+    top: 7%;
+    font-size: clamp(4rem, 18vw, 9rem);
+  }
+
+  .foreground {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    padding: 6.75rem 4vw 2.5rem;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 1.75rem;
+  }
+
+  .listCol {
+    height: auto;
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .mediaCol {
+    height: auto;
+  }
+
+  .mediaWrapper {
+    width: min(100%, 620px);
+  }
+
+  .paginationCol {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ul {
+    gap: 0.55rem;
+  }
+
+  .link {
+    font-size: 0.9rem;
+  }
 }

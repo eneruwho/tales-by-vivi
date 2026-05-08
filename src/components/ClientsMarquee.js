@@ -29,6 +29,12 @@ export default function ClientsMarquee({ logos = [] }) {
     const bottomTrack = bottomTrackRef.current;
     if (!topTrack || !bottomTrack) return;
 
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) return;
+
     const tracks = [
       { el: topTrack, direction: -1, baseSpeed: 0.24, x: 0, width: 1 },
       { el: bottomTrack, direction: 1, baseSpeed: 0.2, x: 0, width: 1 },

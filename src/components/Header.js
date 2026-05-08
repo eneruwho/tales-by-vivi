@@ -14,6 +14,7 @@ export default function Header() {
   const [menuHovered, setMenuHovered] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const menuCloseTimeoutRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const updateClock = () => {
@@ -37,6 +38,14 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    const check = () => window.innerWidth <= 480;
+    const update = () => setIsMobile(check());
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   if (pathname?.startsWith("/admin")) return null;
 
   const handleMenuClose = () => {
@@ -49,8 +58,14 @@ export default function Header() {
 
   const handleMenuMouseEnter = () => {
     if (menuCloseTimeoutRef.current) clearTimeout(menuCloseTimeoutRef.current);
+    setIsMobile(window.innerWidth <= 480);
     setMenuHovered(true);
     setMenuOpen(true);
+  };
+
+  const toggleMenu = () => {
+    setIsMobile(window.innerWidth <= 480);
+    setMenuOpen((s) => !s);
   };
 
   const navLinks = [
@@ -129,7 +144,7 @@ export default function Header() {
               <motion.button
                 key="menu-btn"
                 className={styles.menuBtn}
-                onClick={() => setMenuOpen(!menuOpen)}
+                onClick={toggleMenu}
                 data-cursor="hover"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1, transition: { delay: 0.2 } }}
@@ -140,7 +155,11 @@ export default function Header() {
             ) : (
               <motion.div
                 key="nav-open"
-                className={styles.navLinks}
+                className={
+                  isMobile
+                    ? `${styles.navLinks} ${styles.mobileNav}`
+                    : styles.navLinks
+                }
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1, transition: { duration: 0.2 } }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}

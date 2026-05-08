@@ -71,3 +71,27 @@
 .button:hover {
   opacity: 0.8;
 }
+
+@media (max-width: 480px) {
+  .container {
+    height: auto;
+    min-height: 100svh;
+    padding: 6rem 1rem 2rem;
+  }
+
+  .form {
+    max-width: 100%;
+    padding: 2rem 1.25rem;
+    gap: 1.2rem;
+  }
+
+  .form h1 {
+    font-size: 1.3rem;
+  }
+
+  .input,
+  .button {
+    font-size: 0.95rem;
+    padding: 0.9rem;
+  }
+}

@@ -23,6 +23,13 @@
   margin-bottom: 8rem;
 }
 
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
 .name {
   font-family: var(--font-display);
   font-size: clamp(4rem, 10vw, 12rem);
@@ -135,4 +142,40 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   transition: color 0.3s ease;
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding: 9.5rem 4vw 3rem;
+  }
+
+  .heroGrid {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+
+  .heroImage {
+    max-width: 420px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 8.5rem 1rem 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .info {
+    opacity: 1;
+    transform: translateY(0);
+    padding: 1.1rem;
+  }
 }

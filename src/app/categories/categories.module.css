@@ -104,7 +104,9 @@
 }
 
 @media (max-width: 768px) {
-  .catItem { height: 7rem; }
+  .catItem {
+    height: 7rem;
+  }
 }
 
 .catItem:last-child {
@@ -165,4 +167,58 @@
   font-family: var(--font-sans);
   font-weight: 500;
   flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 3rem 4vw 2rem;
+  }
+
+  .heroTitle {
+    font-size: clamp(2.5rem, 10vw, 5rem);
+    margin-bottom: 1rem;
+  }
+
+  .filterBar {
+    padding: 0.75rem 4vw 2rem;
+  }
+
+  .catItem {
+    height: 6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 2.5rem 1rem 1.5rem;
+  }
+
+  .heroTitle {
+    font-size: clamp(1.8rem, 12vw, 3rem);
+  }
+
+  .heroTagline {
+    font-size: 0.9rem;
+  }
+
+  .listContainer {
+    padding: 0 1rem 4rem;
+  }
+
+  .catItem {
+    height: 5.5rem;
+  }
+
+  .catContent {
+    padding: 0 0.75rem;
+  }
+
+  .catName {
+    font-size: clamp(1.5rem, 6vw, 2.5rem);
+  }
+
+  .catCount {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+  }
 }

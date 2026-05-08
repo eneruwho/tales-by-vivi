@@ -147,6 +147,14 @@
   transform: translateY(0);
 }
 
+.socialLink:focus-visible span {
+  transform: translateY(-100%);
+}
+
+.socialLink:focus-visible::after {
+  transform: translateY(0);
+}
+
 /* ─── Right Col ─── */
 .rightCol {
   display: flex;
@@ -247,7 +255,6 @@
   /* Ghost/outline effect — fill transparent, just stroke */
   color: transparent;
   -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.12);
-  text-stroke: 1.5px rgba(255, 255, 255, 0.12);
   -webkit-user-select: none;
   user-select: none;
   pointer-events: auto;
@@ -269,7 +276,6 @@
   position: relative;
   color: transparent;
   -webkit-text-stroke: 1.5px rgba(200, 200, 200, 0.65);
-  text-stroke: 1.5px rgba(200, 200, 200, 0.65);
   /* Solid white fill when active — uses background-clip to apply text color */
   background: linear-gradient(90deg, var(--color-white), var(--color-white));
   -webkit-background-clip: text;
@@ -284,6 +290,11 @@
 
 /* Hover whole logo to fill (block-only) */
 .bigLogo:hover .bigLogoChar {
+  background-size: 100% 100%;
+  transform: translateY(-4px);
+}
+
+.bigLogo:focus-visible .bigLogoChar {
   background-size: 100% 100%;
   transform: translateY(-4px);
 }
@@ -305,6 +316,103 @@
   }
   100% {
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .socialLink span {
+    transition: none;
+  }
+
+  .socialLink::after {
+    transition: none;
+  }
+
+  .bigLogoChar {
+    animation: none;
+    transition: none;
+  }
+
+  .bigLogo:hover .bigLogoChar,
+  .bigLogo:focus-visible .bigLogoChar {
+    background-size: 0% 100%;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .wrapper {
+    margin: 0 0.75rem;
+    padding: 3.5rem 1rem 2.75rem;
+  }
+
+  .socials {
+    font-size: 0.68rem;
+    gap: 0.25rem 0;
+  }
+
+  .socialLink {
+    padding-right: 1rem;
+  }
+
+  .credits {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.62rem;
+  }
+
+  .creditsTitle {
+    width: 100%;
+  }
+
+  .bigLogo {
+    margin-top: 2rem;
+    font-size: clamp(3rem, 20vw, 6.5rem);
+    line-height: 0.9;
+  }
+}
+
+@media (max-width: 480px) {
+  .newsletter {
+    max-width: 100%;
+  }
+
+  .newsletterInput {
+    padding-left: 1rem;
+    padding-right: 2.65rem;
+    font-size: 0.84rem;
+  }
+
+  .nav {
+    gap: 1rem;
+  }
+
+  .navItem {
+    font-size: 0.82rem;
+  }
+}
+
+@media (hover: none) {
+  .socialLink span {
+    transform: none !important;
+  }
+
+  .socialLink::after {
+    display: none;
+  }
+
+  .navSquare {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .navItem span:last-child {
+    transform: none !important;
+  }
+
+  .bigLogo .bigLogoChar {
+    background-size: 100% 100%;
+    transform: none;
   }
 }
 
@@ -337,7 +445,6 @@
 
 [data-theme="light"] .bigLogo {
   -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.08);
-  text-stroke: 1.5px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="light"] .successMsg {

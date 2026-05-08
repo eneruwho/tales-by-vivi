@@ -148,6 +148,19 @@
 }
 
 @media (max-width: 768px) {
+  .main {
+    padding: 9rem 4vw 2.5rem;
+  }
+
+  .h1 {
+    font-size: clamp(2rem, 8vw, 4rem);
+  }
+
+  .grid {
+    gap: 2rem;
+    padding-top: 2.5rem;
+  }
+
   .wheel {
     width: 18rem;
     height: 18rem;
@@ -157,5 +170,57 @@
     width: 8.8rem;
     margin-left: -4.4rem;
     transform-origin: center 8.5rem;
+  }
+
+  .spinHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 8rem 1rem 2rem;
+  }
+
+  .h1 {
+    font-size: clamp(1.8rem, 10vw, 2.8rem);
+    margin-bottom: 1rem;
+  }
+
+  .h2 {
+    font-size: clamp(1rem, 4vw, 1.8rem);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .grid p {
+    font-size: 1rem;
+  }
+
+  .wheel {
+    width: 16rem;
+    height: 16rem;
+  }
+
+  .wheelCard {
+    width: 7.5rem;
+    margin-left: -3.75rem;
+    transform-origin: center 7.2rem;
+    padding: 0.65rem;
+  }
+
+  .wheelCard strong,
+  .wheelCard span {
+    font-size: 0.65rem;
+  }
+
+  .spinHead h3 {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
   }
 }

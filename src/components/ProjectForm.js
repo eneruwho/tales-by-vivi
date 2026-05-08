@@ -74,12 +74,12 @@ export default function ProjectForm({ artists }) {
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Category</label>
+            <label>Categories (comma-separated)</label>
             <input
               type="text"
-              name="category"
+              name="categories"
               required
-              placeholder="e.g. Set Design"
+              placeholder="e.g. Set Design, CGI, Photography"
               className={styles.input}
               disabled={loading}
             />
@@ -91,11 +91,11 @@ export default function ProjectForm({ artists }) {
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Image URL</label>
+            <label>Preview Image (for website display)</label>
             <input
-              type="url"
-              name="imageUrl"
-              placeholder="https://..."
+              type="file"
+              name="previewImage"
+              accept="image/*"
               className={styles.input}
               disabled={loading}
             />
@@ -119,6 +119,17 @@ export default function ProjectForm({ artists }) {
               type="url"
               name="videoUrl"
               placeholder="https://..."
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>YouTube Link (opens in new tab)</label>
+            <input
+              type="url"
+              name="youtubeUrl"
+              placeholder="https://youtube.com/watch?v=..."
               className={styles.input}
               disabled={loading}
             />

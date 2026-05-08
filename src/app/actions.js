@@ -91,9 +91,13 @@ export async function addProject(formData) {
     throw new Error("Project title is required");
   }
 
-  const category = formData.get("category");
-  if (!category?.trim()) {
-    throw new Error("Project category is required");
+  const rawCategories = formData.get("categories") || "";
+  const categories = rawCategories
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
+  if (categories.length === 0) {
+    throw new Error("At least one category is required");
   }
 
   const artist = formData.get("artist");
@@ -103,25 +107,39 @@ export async function addProject(formData) {
 
   const slug = formData.get("slug") || slugify(title);
   const artistSlug = formData.get("artistSlug") || slugify(artist);
+
+  // Upload project images
   const uploadedImages = await uploadFiles(
     formData.getAll("projectImages"),
     "project",
   );
+  // Upload preview image
+  const uploadedPreviewImages = await uploadFiles(
+    formData.getAll("previewImage"),
+    "project_preview",
+  );
+
   const uploadedVideos = await uploadFiles(
     formData.getAll("projectVideos"),
     "project",
   );
+
+  const youtubeUrl = formData.get("youtubeUrl") || null;
+
   const imageUrl = formData.get("imageUrl") || uploadedImages[0]?.url || null;
+  const previewImageUrl = uploadedPreviewImages[0]?.url || null;
   const videoUrl = formData.get("videoUrl") || uploadedVideos[0]?.url || null;
 
   await db.addProject({
     title,
     slug,
-    category,
+    categories,
     imageUrl,
     imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
+    previewImageUrl,
     videoUrl,
     videoUrls: uploadedVideos.map((item) => item.url).filter(Boolean),
+    youtubeUrl,
     description: formData.get("description") || null,
     artist,
     artistSlug,
@@ -142,10 +160,6 @@ export async function addArtist(formData) {
     formData.getAll("artistImage"),
     "artists",
   );
-  // debug: log uploaded images (server-side)
-  try {
-    console.log("addArtist: uploadedImages", uploadedImages);
-  } catch (e) {}
   const created = await db.addArtist({
     name,
     slug,
@@ -208,26 +222,42 @@ export async function updateProject(id, formData) {
   const slug = formData.get("slug") || slugify(title);
   const artist = formData.get("artist");
   const artistSlug = formData.get("artistSlug") || slugify(artist);
+
+  const rawCategories = formData.get("categories") || "";
+  const categories = rawCategories
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
+
   const uploadedImages = await uploadFiles(
     formData.getAll("projectImages"),
     "project",
+  );
+  const uploadedPreviewImages = await uploadFiles(
+    formData.getAll("previewImage"),
+    "project_preview",
   );
   const uploadedVideos = await uploadFiles(
     formData.getAll("projectVideos"),
     "project",
   );
+
   const imageUrl = formData.get("imageUrl") || uploadedImages[0]?.url || null;
+  const previewImageUrl = uploadedPreviewImages[0]?.url || null;
   const videoUrl = formData.get("videoUrl") || uploadedVideos[0]?.url || null;
+  const youtubeUrl = formData.get("youtubeUrl") || null;
 
   await db.updateProject(id, {
     id,
     title,
     slug,
-    category: formData.get("category"),
+    categories,
     imageUrl,
     imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
+    previewImageUrl,
     videoUrl,
     videoUrls: uploadedVideos.map((item) => item.url).filter(Boolean),
+    youtubeUrl,
     description: formData.get("description") || null,
     artist,
     artistSlug,

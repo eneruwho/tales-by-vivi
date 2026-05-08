@@ -186,3 +186,19 @@
     opacity: 0.5;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .blobA,
+  .blobB,
+  .blobC,
+  .blobD,
+  .blobE {
+    animation: none;
+  }
+}
+
+@media (prefers-color-scheme: light) and (prefers-reduced-motion: reduce) {
+  .blobs {
+    opacity: 0.35;
+  }
+}

@@ -4,8 +4,30 @@ import { getProjects, updateProject } from "../../../actions";
 
 export default async function EditProjectPage({ params }) {
   const id = Number(params.id);
-  const projects = await getProjects();
-  const project = projects.find((p) => Number(p.id) === id) || null;
+  let projects = [];
+  let project = null;
+  try {
+    projects = await getProjects();
+    project = projects.find((p) => Number(p.id) === id) || null;
+  } catch (err) {
+    // Log server-side for debugging and show a helpful message in UI
+    console.error(
+      "EditProjectPage: failed to load projects",
+      err && err.message ? err.message : err,
+    );
+    return (
+      <div style={{ padding: "3rem" }}>
+        <h2>Unable to load projects</h2>
+        <p>
+          There was an error loading projects for editing:{" "}
+          {String(err && err.message)}
+        </p>
+        <p>
+          <Link href="/admin">Back to Admin</Link>
+        </p>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
