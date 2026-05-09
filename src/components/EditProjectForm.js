@@ -1,31 +1,45 @@
 "use client";
-import { useRef, useState } from "react";
-import { addProject } from "../app/actions";
+import { useState } from "react";
 import styles from "../app/admin/admin.module.css";
-import ArtistSelect from "./ArtistSelect";
-import Toast from "./Toast";
 import Loader from "./Loader";
+import Toast from "./Toast";
 
-export default function ProjectForm({ artists }) {
-  const formRef = useRef(null);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+export default function EditProjectForm({ project }) {
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
 
-  async function handleSubmit(formData) {
+  async function handleSubmit(e) {
+    e.preventDefault();
     setError(null);
     setSuccess(null);
     setLoading(true);
     try {
-      await addProject(formData);
-      setSuccess("Project added successfully!");
-      // Reset form after 2 seconds
-      setTimeout(() => {
-        const form = formRef.current;
-        if (form) form.reset();
-      }, 2000);
+      const form = e.currentTarget;
+      const data = {
+        id: project.id,
+        title: form.title.value,
+        slug: form.slug.value,
+        category: form.category.value,
+        imageUrl: form.imageUrl.value,
+        videoUrl: form.videoUrl.value,
+        description: form.description.value,
+        artist: form.artist.value,
+        artistSlug: form.artistSlug.value,
+      };
+
+      const res = await fetch("/api/update-project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok || json?.error) {
+        throw new Error(json?.error || "Failed to update project");
+      }
+      setSuccess("Project updated successfully!");
     } catch (err) {
-      setError(err?.message || "Failed to add project");
+      setError(err?.message || "Update failed");
     } finally {
       setLoading(false);
     }
@@ -38,7 +52,7 @@ export default function ProjectForm({ artists }) {
         style={{ position: "relative" }}
         aria-busy={loading}
       >
-        <h2>Add New Project</h2>
+        <h2>Edit Project</h2>
         {error && (
           <div
             style={{
@@ -53,6 +67,7 @@ export default function ProjectForm({ artists }) {
             {error}
           </div>
         )}
+
         {loading && (
           <div
             style={{
@@ -61,95 +76,96 @@ export default function ProjectForm({ artists }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "rgba(255,255,255,0.85)",
-              zIndex: 20,
+              background: "rgba(255,255,255,0.95)",
+              zIndex: 40,
               borderRadius: "8px",
+              flexDirection: "column",
             }}
             aria-hidden={false}
           >
-            <Loader text="Adding project..." />
+            <div style={{ fontSize: "1.6rem", marginBottom: "1rem" }}>
+              Saving changes…
+            </div>
+            <Loader text="Saving…" />
           </div>
         )}
-        <form action={handleSubmit} ref={formRef}>
+
+        <form onSubmit={handleSubmit}>
           <div className={styles.inputGroup}>
             <label>Title</label>
             <input
               type="text"
               name="title"
               required
+              defaultValue={project.title}
               className={styles.input}
               disabled={loading}
             />
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Slug (Optional - auto-generated)</label>
+            <label>Slug (Optional)</label>
             <input
               type="text"
               name="slug"
+              defaultValue={project.slug}
               className={styles.input}
-              placeholder="my-awesome-project"
               disabled={loading}
             />
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Categories (comma-separated)</label>
+            <label>Category</label>
             <input
               type="text"
-              name="categories"
+              name="category"
               required
-              placeholder="e.g. Set Design, CGI, Photography"
+              defaultValue={project.category}
               className={styles.input}
               disabled={loading}
             />
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Artist</label>
-            <ArtistSelect artists={artists} />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Preview Image (for website display)</label>
+            <label>Artist Name</label>
             <input
-              type="file"
-              name="previewImage"
-              accept="image/*"
+              type="text"
+              name="artist"
+              required
+              defaultValue={project.artist}
               className={styles.input}
               disabled={loading}
             />
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Project Images Upload</label>
+            <label>Artist Slug (Optional)</label>
             <input
-              type="file"
-              name="projectImages"
-              accept="image/*"
-              multiple
+              type="text"
+              name="artistSlug"
+              defaultValue={project.artistSlug}
               className={styles.input}
               disabled={loading}
             />
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Video URL (Optional link)</label>
+            <label>Image URL</label>
+            <input
+              type="url"
+              name="imageUrl"
+              defaultValue={project.imageUrl || ""}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Video URL (Optional)</label>
             <input
               type="url"
               name="videoUrl"
-              placeholder="https://..."
-              className={styles.input}
-              disabled={loading}
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>YouTube Link (opens in new tab)</label>
-            <input
-              type="url"
-              name="youtubeUrl"
-              placeholder="https://youtube.com/watch?v=..."
+              defaultValue={project.videoUrl || ""}
               className={styles.input}
               disabled={loading}
             />
@@ -160,13 +176,16 @@ export default function ProjectForm({ artists }) {
             <textarea
               name="description"
               className={styles.textarea}
+              defaultValue={project.description || ""}
               disabled={loading}
             ></textarea>
           </div>
 
-          <button type="submit" className={styles.button} disabled={loading}>
-            {loading ? "Adding Project..." : "Add Project"}
-          </button>
+          <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+            <button type="submit" className={styles.button} disabled={loading}>
+              {loading ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
         </form>
       </div>
 

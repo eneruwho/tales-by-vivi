@@ -5,129 +5,176 @@ import styles from "./projectDetail.module.css";
 import Link from "next/link";
 import { X } from "lucide-react";
 
-function buildMediaList(project) {
+function buildGallery(project) {
+  const seen = new Set();
   const media = [];
 
-  if (Array.isArray(project.videoUrls)) {
-    project.videoUrls.forEach(
-      (url) => url && media.push({ type: "video", url }),
-    );
-  }
-  if (project.videoUrl) media.push({ type: "video", url: project.videoUrl });
-  if (Array.isArray(project.imageUrls)) {
-    project.imageUrls.forEach(
-      (url) => url && media.push({ type: "image", url }),
-    );
-  }
-  if (project.imageUrl) media.push({ type: "image", url: project.imageUrl });
+  const add = (url, type = "image") => {
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      media.push({ type, url });
+    }
+  };
 
-  return media;
+  if (Array.isArray(project.imageUrls))
+    project.imageUrls.forEach((u) => add(u));
+  add(project.imageUrl);
+
+  // Exclude the hero preview from the gallery
+  const heroUrl = project.previewImageUrl || project.imageUrl;
+  return media.filter((m) => m.url !== heroUrl);
 }
+
+// The project will store the full YouTube embed URL in `project.youtubeUrl`
+// (e.g. https://www.youtube.com/embed/VIDEO_ID). Use it directly.
 
 export default function ProjectDetailClient({ project }) {
   const containerRef = useRef(null);
-  const mediaList = buildMediaList(project);
 
-  // Use previewImageUrl as hero if available, otherwise use first media
-  const heroImage = project.previewImageUrl || (mediaList[0]?.type === "image" ? mediaList[0].url : null);
-  const heroVideo = mediaList[0]?.type === "video" ? mediaList[0].url : null;
-  const galleryMedia = project.previewImageUrl ? mediaList : mediaList.slice(1);
+  const galleryMedia = buildGallery(project);
+  const categories = Array.isArray(project.categories)
+    ? project.categories
+    : project.category
+      ? project.category.split(",").map((c) => c.trim())
+      : [];
+  // Normalize various YouTube URL formats into an embed URL
+  function toYouTubeEmbed(url) {
+    if (!url || typeof url !== "string") return null;
+    const trimmed = url.trim();
+    // Already an embed URL
+    if (trimmed.includes("youtube.com/embed/")) return trimmed;
+    // Standard watch URL
+    const watchMatch = trimmed.match(/[?&]v=([\w-]{6,})/);
+    if (watchMatch && watchMatch[1])
+      return `https://www.youtube.com/embed/${watchMatch[1]}`;
+    // Short youtu.be URL
+    const shortMatch = trimmed.match(/youtu\.be\/([\w-]{6,})/);
+    if (shortMatch && shortMatch[1])
+      return `https://www.youtube.com/embed/${shortMatch[1]}`;
+    // If it's just an ID
+    if (/^[\w-]{6,}$/.test(trimmed))
+      return `https://www.youtube.com/embed/${trimmed}`;
+    return null;
+  }
+
+  // Try youtubeUrl first, fall back to videoUrl or the first videoUrls entry
+  const youtubeEmbedUrl = toYouTubeEmbed(
+    project.youtubeUrl ||
+      project.videoUrl ||
+      (Array.isArray(project.videoUrls) ? project.videoUrls[0] : null),
+  );
 
   useEffect(() => {
     gsap.fromTo(
       containerRef.current,
       { opacity: 0 },
-      { opacity: 1, duration: 1.5, ease: "power3.out" },
+      { opacity: 1, duration: 1.2, ease: "power3.out" },
     );
-  }, []);
-
-  const handleHeroClick = () => {
-    if (project.youtubeUrl) {
-      window.open(project.youtubeUrl, "_blank");
+    // Debug logs to help diagnose missing iframe in browser
+    try {
+      console.log(
+        "ProjectDetailClient: project.youtubeUrl ->",
+        project.youtubeUrl,
+      );
+      console.log("ProjectDetailClient: project.videoUrl ->", project.videoUrl);
+      console.log(
+        "ProjectDetailClient: project.videoUrls ->",
+        project.videoUrls,
+      );
+      console.log("ProjectDetailClient: youtubeEmbedUrl ->", youtubeEmbedUrl);
+    } catch (e) {
+      // ignore
     }
-  };
+  }, []);
 
   return (
     <div className={styles.container} ref={containerRef}>
+      {/* Close / back */}
       <Link
-        href={project.artistSlug ? `/artists/${project.artistSlug}` : "/"}
+        href={
+          project.artistSlug ? `/artists/${project.artistSlug}` : "/artists"
+        }
         className={styles.closeBtn}
         data-cursor="hover"
       >
-        <X size={40} />
+        <X size={28} />
       </Link>
 
-      <div className={styles.mediaContainer} style={project.youtubeUrl ? { cursor: "pointer" } : {}}>
-        {heroVideo ? (
-          <video
-            src={heroVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={styles.fullVideo}
+      {/* ── HERO ── */}
+      <section className={styles.hero}>
+        {youtubeEmbedUrl && (
+          <iframe
+            src={youtubeEmbedUrl}
+            title={project.title}
+            className={styles.heroVideo}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
           />
-        ) : heroImage ? (
-          <img
-            src={heroImage}
-            alt={project.title}
-            className={styles.fullImage}
-            loading="lazy"
-            onClick={handleHeroClick}
-            style={project.youtubeUrl ? { cursor: "pointer" } : {}}
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src =
-                'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="%23666" dominant-baseline="middle" text-anchor="middle">Image unavailable</text></svg>';
-            }}
-          />
-        ) : null}
-      </div>
-
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <div className={styles.titleGroup}>
-            <span className={styles.artistName}>{project.artist}</span>
-            <h1 className={styles.title}>{project.title}</h1>
-          </div>
-          <div className={styles.categories}>
-            {project.category.split(",").map((cat, i) => (
-              <span key={i} className={styles.categoryPill}>
-                {cat.trim()}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {project.description && (
-          <div className={styles.description}>
-            <p>{project.description}</p>
-          </div>
         )}
+        <div className={styles.heroOverlay} />
 
-        {galleryMedia.length > 0 && (
-          <div className={styles.gallery}>
-            {galleryMedia.map((media, index) => (
-              <div key={`${media.type}-${index}`} className={styles.thumb}>
-                {media.type === "video" ? (
-                  <video
-                    src={media.url}
-                    controls
-                    playsInline
-                    className={styles.thumbVideo}
-                  />
-                ) : (
+        <div className={styles.heroContent}>
+          <span className={styles.artistName}>{project.artist}</span>
+          <h1 className={styles.title}>{project.title}</h1>
+
+          {categories.length > 0 && (
+            <div className={styles.categories}>
+              {categories.map((cat, i) => (
+                <span key={i} className={styles.categoryPill}>
+                  {cat}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* video already used as hero background; no inline duplicate */}
+          {!youtubeEmbedUrl &&
+            (project.youtubeUrl ||
+              project.videoUrl ||
+              (project.videoUrls && project.videoUrls[0])) && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.6rem 0.8rem",
+                  background: "rgba(255,230,230,0.06)",
+                  border: "1px solid rgba(255,100,100,0.08)",
+                  color: "#ffdede",
+                  borderRadius: 6,
+                }}
+              >
+                Unable to render YouTube embed. Raw URLs:{" "}
+                <span style={{ opacity: 0.9 }}>
+                  {project.youtubeUrl ||
+                    project.videoUrl ||
+                    (project.videoUrls && project.videoUrls[0])}
+                </span>
+              </div>
+            )}
+        </div>
+      </section>
+
+      {/* ── BELOW HERO ── */}
+      {(project.description || galleryMedia.length > 0) && (
+        <section className={styles.content}>
+          {project.description && (
+            <p className={styles.description}>{project.description}</p>
+          )}
+
+          {galleryMedia.length > 0 && (
+            <div className={styles.gallery}>
+              {galleryMedia.map((media, i) => (
+                <div key={i} className={styles.thumb}>
                   <img
                     src={media.url}
-                    alt={`${project.title} ${index + 1}`}
+                    alt={`${project.title} ${i + 1}`}
                     className={styles.thumbImage}
                   />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

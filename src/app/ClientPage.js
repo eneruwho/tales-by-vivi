@@ -659,12 +659,9 @@ export default function ClientPage({
                         data-cursor="hover"
                       >
                         {activeProject.videoUrl ? (
-                          <video
+                          <iframe
                             src={activeProject.videoUrl}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
+                            title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
                             className={styles.reelMedia}
                           />
                         ) : (

@@ -85,22 +85,13 @@ export default function ArtistProfileClient({ artist, projects }) {
               data-cursor="hover"
             >
               <div className={styles.mediaWrapper}>
-                {project.videoUrl ? (
-                  <video
-                    src={project.videoUrl}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className={styles.video}
-                  />
-                ) : (
+                
                   <img
                     src={project.imageUrl}
                     alt={project.title}
                     className={styles.image}
                   />
-                )}
+                
               </div>
               <div className={styles.info}>
                 <h3>{project.title}</h3>
