@@ -52,13 +52,16 @@ export default function ArtistProfileClient({ artist, projects }) {
         <div className={styles.heroGrid}>
           <div className={styles.heroImage}>
             <img
-              src={artist.imageUrl || placeholderImage}
+              src={artist.imageUrl || artist.previewImageUrl || placeholderImage}
               alt={artist.name}
               style={{
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
                 aspectRatio: "4 / 5",
+              }}
+              onError={(e) => {
+                e.currentTarget.src = placeholderImage;
               }}
             />
           </div>

@@ -27,8 +27,11 @@ function buildMediaList(project) {
 export default function ProjectDetailClient({ project }) {
   const containerRef = useRef(null);
   const mediaList = buildMediaList(project);
-  const heroMedia = mediaList[0];
-  const galleryMedia = mediaList.slice(1);
+
+  // Use previewImageUrl as hero if available, otherwise use first media
+  const heroImage = project.previewImageUrl || (mediaList[0]?.type === "image" ? mediaList[0].url : null);
+  const heroVideo = mediaList[0]?.type === "video" ? mediaList[0].url : null;
+  const galleryMedia = project.previewImageUrl ? mediaList : mediaList.slice(1);
 
   useEffect(() => {
     gsap.fromTo(
@@ -37,6 +40,12 @@ export default function ProjectDetailClient({ project }) {
       { opacity: 1, duration: 1.5, ease: "power3.out" },
     );
   }, []);
+
+  const handleHeroClick = () => {
+    if (project.youtubeUrl) {
+      window.open(project.youtubeUrl, "_blank");
+    }
+  };
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -48,30 +57,30 @@ export default function ProjectDetailClient({ project }) {
         <X size={40} />
       </Link>
 
-      <div className={styles.mediaContainer}>
-        {heroMedia ? (
-          heroMedia.type === "video" ? (
-            <video
-              src={heroMedia.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className={styles.fullVideo}
-            />
-          ) : (
-            <img
-              src={heroMedia.url}
-              alt={project.title}
-              className={styles.fullImage}
-              loading="lazy"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src =
-                  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="%23666" dominant-baseline="middle" text-anchor="middle">Image unavailable</text></svg>';
-              }}
-            />
-          )
+      <div className={styles.mediaContainer} style={project.youtubeUrl ? { cursor: "pointer" } : {}}>
+        {heroVideo ? (
+          <video
+            src={heroVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={styles.fullVideo}
+          />
+        ) : heroImage ? (
+          <img
+            src={heroImage}
+            alt={project.title}
+            className={styles.fullImage}
+            loading="lazy"
+            onClick={handleHeroClick}
+            style={project.youtubeUrl ? { cursor: "pointer" } : {}}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src =
+                'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="36" fill="%23666" dominant-baseline="middle" text-anchor="middle">Image unavailable</text></svg>';
+            }}
+          />
         ) : null}
       </div>
 
