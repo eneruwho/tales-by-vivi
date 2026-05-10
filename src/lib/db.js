@@ -47,7 +47,7 @@ export async function getArtists() {
   const snap = await firestore.collections.artists.get();
   const artists = snap.docs.map((doc) => toDoc(doc.data()));
   return artists.sort((a, b) =>
-    String(a.name || "").localeCompare(String(b.name || ""))
+    String(a.name || "").localeCompare(String(b.name || "")),
   );
 }
 
@@ -84,6 +84,10 @@ export async function addProject(input) {
     title: input.title,
     slug: input.slug,
     categories: Array.isArray(input.categories) ? input.categories : [],
+    subcategories: Array.isArray(input.subcategories)
+      ? input.subcategories
+      : [],
+    artistRoles: Array.isArray(input.artistRoles) ? input.artistRoles : [],
     imageUrl: input.imageUrl ?? null,
     imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
     previewImageUrl: input.previewImageUrl ?? null,
@@ -118,6 +122,7 @@ export async function addArtist(input) {
     name: input.name,
     slug: input.slug,
     slogan: input.slogan ?? null,
+    instagramUrl: input.instagramUrl ?? null,
     bio: input.bio ?? null,
     imageUrl: input.imageUrl ?? null,
     createdAt: new Date().toISOString(),
@@ -181,20 +186,31 @@ export async function updateProject(id, input) {
     .get();
   if (!slugQ.empty) {
     const conflict = slugQ.docs.find((doc) => doc.data().id !== numericId);
-    if (conflict)
-      throw new Error(`Project slug already exists: ${input.slug}`);
+    if (conflict) throw new Error(`Project slug already exists: ${input.slug}`);
   }
 
   const updated = {
     ...existing,
     title: input.title,
     slug: input.slug,
-    categories: Array.isArray(input.categories) ? input.categories : existing.categories || [],
+    categories: Array.isArray(input.categories)
+      ? input.categories
+      : existing.categories || [],
+    subcategories: Array.isArray(input.subcategories)
+      ? input.subcategories
+      : existing.subcategories || [],
+    artistRoles: Array.isArray(input.artistRoles)
+      ? input.artistRoles
+      : existing.artistRoles || [],
     imageUrl: input.imageUrl ?? null,
-    imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : existing.imageUrls || [],
+    imageUrls: Array.isArray(input.imageUrls)
+      ? input.imageUrls
+      : existing.imageUrls || [],
     previewImageUrl: input.previewImageUrl ?? existing.previewImageUrl ?? null,
     videoUrl: input.videoUrl ?? null,
-    videoUrls: Array.isArray(input.videoUrls) ? input.videoUrls : existing.videoUrls || [],
+    videoUrls: Array.isArray(input.videoUrls)
+      ? input.videoUrls
+      : existing.videoUrls || [],
     youtubeUrl: input.youtubeUrl ?? existing.youtubeUrl ?? null,
     description: input.description ?? null,
     artist: input.artist,
@@ -238,7 +254,7 @@ export async function getClientLogos() {
       (item) => ({
         ...item,
         source: "cloudinary",
-      })
+      }),
     );
     return mergeClientLogos(fallbacks, cloudinaryLogos);
   } catch {

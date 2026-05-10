@@ -56,6 +56,19 @@ function hasNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function parseCommaSeparatedList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value !== "string") return [];
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 async function uploadFiles(values, folder) {
   const files = values.filter(isUploadableFile);
   if (files.length === 0) return [];
@@ -92,13 +105,17 @@ export async function addProject(formData) {
   }
 
   const rawCategories = formData.get("categories") || "";
-  const categories = rawCategories
-    .split(",")
-    .map((c) => c.trim())
-    .filter(Boolean);
+  const categories = parseCommaSeparatedList(rawCategories);
   if (categories.length === 0) {
     throw new Error("At least one category is required");
   }
+
+  const subcategories = parseCommaSeparatedList(
+    formData.get("subcategories") || "",
+  );
+  const artistRoles = parseCommaSeparatedList(
+    formData.get("artistRoles") || "",
+  );
 
   const artist = formData.get("artist");
   if (!artist?.trim()) {
@@ -134,6 +151,8 @@ export async function addProject(formData) {
     title,
     slug,
     categories,
+    subcategories,
+    artistRoles,
     imageUrl,
     imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
     previewImageUrl,
@@ -164,6 +183,7 @@ export async function addArtist(formData) {
     name,
     slug,
     slogan: formData.get("slogan") || null,
+    instagramUrl: formData.get("instagramUrl") || null,
     bio: formData.get("bio") || null,
     imageUrl: formData.get("imageUrl") || uploadedImages[0]?.url || null,
   });
@@ -224,10 +244,13 @@ export async function updateProject(id, formData) {
   const artistSlug = formData.get("artistSlug") || slugify(artist);
 
   const rawCategories = formData.get("categories") || "";
-  const categories = rawCategories
-    .split(",")
-    .map((c) => c.trim())
-    .filter(Boolean);
+  const categories = parseCommaSeparatedList(rawCategories);
+  const subcategories = parseCommaSeparatedList(
+    formData.get("subcategories") || "",
+  );
+  const artistRoles = parseCommaSeparatedList(
+    formData.get("artistRoles") || "",
+  );
 
   const uploadedImages = await uploadFiles(
     formData.getAll("projectImages"),
@@ -252,6 +275,8 @@ export async function updateProject(id, formData) {
     title,
     slug,
     categories,
+    subcategories,
+    artistRoles,
     imageUrl,
     imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
     previewImageUrl,

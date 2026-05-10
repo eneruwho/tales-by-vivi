@@ -34,8 +34,23 @@ export default function ProjectsList({ initialProjects = [] }) {
               <div className={styles.projectInfo}>
                 <h3 style={{ fontSize: "1rem" }}>{project.title}</h3>
                 <p>
-                  {project.category} | {project.artist}
+                  {Array.isArray(project.categories)
+                    ? project.categories.join(", ")
+                    : project.category}{" "}
+                  | {project.artist}
                 </p>
+                {Array.isArray(project.subcategories) &&
+                  project.subcategories.length > 0 && (
+                    <p style={{ fontSize: "0.8rem", marginTop: "0.35rem" }}>
+                      Subcategories: {project.subcategories.join(", ")}
+                    </p>
+                  )}
+                {Array.isArray(project.artistRoles) &&
+                  project.artistRoles.length > 0 && (
+                    <p style={{ fontSize: "0.8rem", marginTop: "0.35rem" }}>
+                      Artist Roles: {project.artistRoles.join(", ")}
+                    </p>
+                  )}
                 {project.videoUrl && (
                   <span style={{ fontSize: "0.7rem", color: "#0f0" }}>
                     ● Video Included

@@ -12,9 +12,7 @@ const navLinks = [
 ];
 
 const socials = [
-  { name: "Instagram", url: "https://instagram.com" },
-  { name: "Vimeo", url: "https://vimeo.com" },
-  { name: "LinkedIn", url: "https://linkedin.com" },
+  { name: "Instagram", url: "https://instagram.com" }
 ];
 
 export default function Footer() {

@@ -8,6 +8,8 @@ const projects = [
     title: "Luminous Glow",
     slug: "luminous-glow",
     category: "Animation",
+    subcategories: ["Abstract", "Glow"],
+    artistRoles: ["Direction", "Animation"],
     imageUrl: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853",
     videoUrl:
       "https://cdn.pixabay.com/vimeo/312061327/abstract-21151.mp4?width=1280&hash=8b51d5c7f8a7e4b2d5a8e4b2d5a8e4b2d5a8e4b2",
@@ -19,6 +21,8 @@ const projects = [
     title: "Cybernetic Dreams",
     slug: "cybernetic-dreams",
     category: "CGI",
+    subcategories: ["Futuristic", "Character Work"],
+    artistRoles: ["CGI", "Compositing"],
     imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe",
     videoUrl:
       "https://cdn.pixabay.com/vimeo/312061327/abstract-21151.mp4?width=1280&hash=8b51d5c7f8a7e4b2d5a8e4b2d5a8e4b2d5a8e4b2",
@@ -30,6 +34,8 @@ const projects = [
     title: "Fluid Structures",
     slug: "fluid-structures",
     category: "Design",
+    subcategories: ["Editorial", "Minimal"],
+    artistRoles: ["Design", "Motion"],
     imageUrl: "https://images.unsplash.com/photo-1614850523060-8da1d56ae167",
     videoUrl:
       "https://cdn.pixabay.com/vimeo/312061327/abstract-21151.mp4?width=1280&hash=8b51d5c7f8a7e4b2d5a8e4b2d5a8e4b2d5a8e4b2",

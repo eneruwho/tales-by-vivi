@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLenis } from "lenis/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -142,12 +143,14 @@ export default function ClientPage({
   const showreelVideoRef = useRef(null);
   const showreelOverlayRef = useRef(null);
   const containerRef = useRef(null);
+  const heroWheelLockRef = useRef(false);
   const lastFamilyIdxRef = useRef(-1);
   const [activeFamilyIdx, setActiveFamilyIdx] = useState(0);
   const [activeReelIdx, setActiveReelIdx] = useState(0);
   const [showreelCopyStep, setShowreelCopyStep] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [introPhase, setIntroPhase] = useState("playing");
+  const lenis = useLenis();
 
   const familyArtists = Array.isArray(artists) ? artists : [];
   const featuredProjects = projects.slice(0, 5);
@@ -194,8 +197,6 @@ export default function ClientPage({
   const categories =
     Object.keys(catCounts).length > 0 ? catCounts : defaultCategories;
 
-
-
   useEffect(() => {
     if (
       !showreelRef.current ||
@@ -221,9 +222,50 @@ export default function ClientPage({
         setShowreelCopyStep((prev) => (prev === nextStep ? prev : nextStep));
       },
     });
-
     return () => trigger.kill();
   }, []);
+
+  useEffect(() => {
+    if (!lenis || !showreelRef.current || introPhase !== "done") return;
+
+    const handleWheel = (event) => {
+      const section = showreelRef.current;
+      if (!section) return;
+
+      const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+      const sectionBottom = sectionTop + window.innerHeight;
+      const currentScroll = window.scrollY;
+      const isInHero =
+        currentScroll >= sectionTop - 8 && currentScroll <= sectionBottom + 8;
+
+      if (!isInHero || heroWheelLockRef.current) return;
+
+      const direction = event.deltaY > 0 ? 1 : event.deltaY < 0 ? -1 : 0;
+      if (direction === 0) return;
+
+      const nextStep =
+        direction > 0
+          ? Math.min(1, showreelCopyStep + 1)
+          : Math.max(0, showreelCopyStep - 1);
+      if (nextStep === showreelCopyStep) return;
+
+      event.preventDefault();
+      heroWheelLockRef.current = true;
+
+      lenis.scrollTo(sectionTop + window.innerHeight * nextStep, {
+        duration: 0.55,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+        lock: true,
+      });
+
+      window.setTimeout(() => {
+        heroWheelLockRef.current = false;
+      }, 650);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [introPhase, lenis, showreelCopyStep]);
 
   useEffect(() => {
     const checkMobile = () =>
@@ -457,7 +499,6 @@ export default function ClientPage({
                 className={styles.showreelVidOverlay}
               />
             </motion.div>
-
           </motion.div>
         </section>
 
@@ -661,7 +702,10 @@ export default function ClientPage({
                         {activeProject.videoUrl ? (
                           <iframe
                             src={activeProject.videoUrl}
-                            title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
+                            title="YouTube video player"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allowFullScreen
                             className={styles.reelMedia}
                           />
                         ) : (

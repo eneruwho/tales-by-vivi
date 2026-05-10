@@ -106,8 +106,30 @@ export default function ProjectForm({ artists }) {
           </div>
 
           <div className={styles.inputGroup}>
+            <label>Subcategories (comma-separated)</label>
+            <input
+              type="text"
+              name="subcategories"
+              placeholder="e.g. Neon, Editorial, Abstract"
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
             <label>Artist</label>
             <ArtistSelect artists={artists} />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Artist Roles (comma-separated)</label>
+            <input
+              type="text"
+              name="artistRoles"
+              placeholder="e.g. Direction, Animation, Compositing"
+              className={styles.input}
+              disabled={loading}
+            />
           </div>
 
           <div className={styles.inputGroup}>
@@ -116,18 +138,6 @@ export default function ProjectForm({ artists }) {
               type="file"
               name="previewImage"
               accept="image/*"
-              className={styles.input}
-              disabled={loading}
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Project Images Upload</label>
-            <input
-              type="file"
-              name="projectImages"
-              accept="image/*"
-              multiple
               className={styles.input}
               disabled={loading}
             />

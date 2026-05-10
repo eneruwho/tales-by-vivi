@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import styles from "./projectDetail.module.css";
 import Link from "next/link";
+import Image from "next/image";
 import { X } from "lucide-react";
 
 function buildGallery(project) {
@@ -37,6 +38,12 @@ export default function ProjectDetailClient({ project }) {
     : project.category
       ? project.category.split(",").map((c) => c.trim())
       : [];
+  const subcategories = Array.isArray(project.subcategories)
+    ? project.subcategories
+    : [];
+  const artistRoles = Array.isArray(project.artistRoles)
+    ? project.artistRoles
+    : [];
   // Normalize various YouTube URL formats into an embed URL
   function toYouTubeEmbed(url) {
     if (!url || typeof url !== "string") return null;
@@ -85,7 +92,12 @@ export default function ProjectDetailClient({ project }) {
     } catch (e) {
       // ignore
     }
-  }, []);
+  }, [
+    project.videoUrl,
+    project.videoUrls,
+    project.youtubeUrl,
+    youtubeEmbedUrl,
+  ]);
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -122,6 +134,26 @@ export default function ProjectDetailClient({ project }) {
               {categories.map((cat, i) => (
                 <span key={i} className={styles.categoryPill}>
                   {cat}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {subcategories.length > 0 && (
+            <div className={styles.categories}>
+              {subcategories.map((cat, i) => (
+                <span key={`sub-${i}`} className={styles.categoryPill}>
+                  {cat}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {artistRoles.length > 0 && (
+            <div className={styles.categories}>
+              {artistRoles.map((role, i) => (
+                <span key={`role-${i}`} className={styles.categoryPill}>
+                  {role}
                 </span>
               ))}
             </div>
@@ -164,10 +196,12 @@ export default function ProjectDetailClient({ project }) {
             <div className={styles.gallery}>
               {galleryMedia.map((media, i) => (
                 <div key={i} className={styles.thumb}>
-                  <img
+                  <Image
                     src={media.url}
                     alt={`${project.title} ${i + 1}`}
                     className={styles.thumbImage}
+                    fill
+                    unoptimized
                   />
                 </div>
               ))}

@@ -18,6 +18,7 @@ export async function POST(req) {
       name: data.name,
       slug,
       slogan: data.slogan || null,
+      instagramUrl: data.instagramUrl || null,
       bio: data.bio || null,
       imageUrl: data.imageUrl || null,
     });

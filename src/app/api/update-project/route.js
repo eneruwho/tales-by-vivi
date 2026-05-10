@@ -9,6 +9,19 @@ function slugify(text) {
     .replace(/[^\w-]+/g, "");
 }
 
+function parseCommaSeparatedList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value !== "string") return [];
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -32,7 +45,11 @@ export async function POST(req) {
     const updated = await db.updateProject(id, {
       title,
       slug: body.slug || slugify(title),
-      category: body.category || "",
+      categories: parseCommaSeparatedList(
+        body.categories || body.category || "",
+      ),
+      subcategories: parseCommaSeparatedList(body.subcategories || ""),
+      artistRoles: parseCommaSeparatedList(body.artistRoles || ""),
       imageUrl: body.imageUrl || null,
       imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [],
       videoUrl: body.videoUrl || null,

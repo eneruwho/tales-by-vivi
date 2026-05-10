@@ -9,6 +9,12 @@ export default function EditProjectForm({ project }) {
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
 
+  function formatCommaSeparatedValue(value) {
+    if (Array.isArray(value)) return value.join(", ");
+    if (typeof value === "string") return value;
+    return "";
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
@@ -20,7 +26,9 @@ export default function EditProjectForm({ project }) {
         id: project.id,
         title: form.title.value,
         slug: form.slug.value,
-        category: form.category.value,
+        categories: form.categories.value,
+        subcategories: form.subcategories.value,
+        artistRoles: form.artistRoles.value,
         imageUrl: form.imageUrl.value,
         videoUrl: form.videoUrl.value,
         description: form.description.value,
@@ -115,12 +123,25 @@ export default function EditProjectForm({ project }) {
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Category</label>
+            <label>Categories (comma-separated)</label>
             <input
               type="text"
-              name="category"
+              name="categories"
               required
-              defaultValue={project.category}
+              defaultValue={formatCommaSeparatedValue(
+                project.categories || project.category,
+              )}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Subcategories (comma-separated)</label>
+            <input
+              type="text"
+              name="subcategories"
+              defaultValue={formatCommaSeparatedValue(project.subcategories)}
               className={styles.input}
               disabled={loading}
             />
@@ -133,6 +154,17 @@ export default function EditProjectForm({ project }) {
               name="artist"
               required
               defaultValue={project.artist}
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Artist Roles (comma-separated)</label>
+            <input
+              type="text"
+              name="artistRoles"
+              defaultValue={formatCommaSeparatedValue(project.artistRoles)}
               className={styles.input}
               disabled={loading}
             />

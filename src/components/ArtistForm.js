@@ -49,7 +49,11 @@ export default function ArtistForm({ initialArtists = [] }) {
 
   return (
     <>
-      <div className={styles.formPanel} style={{ position: "relative" }} aria-busy={loading}>
+      <div
+        className={styles.formPanel}
+        style={{ position: "relative" }}
+        aria-busy={loading}
+      >
         <h2>Add New Artist</h2>
         {error && (
           <div
@@ -100,6 +104,17 @@ export default function ArtistForm({ initialArtists = [] }) {
               type="text"
               name="slogan"
               placeholder="Simply Better Than Reality"
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Instagram Link</label>
+            <input
+              type="url"
+              name="instagramUrl"
+              placeholder="https://instagram.com/..."
               className={styles.input}
               disabled={loading}
             />
