@@ -6,6 +6,7 @@ export default function ArtistSelect({
   artists: initialArtists = [],
   defaultArtist = "",
   defaultSlug = "",
+  onSelect = null,
 }) {
   const [options, setOptions] = useState([]);
   const [query, setQuery] = useState("");
@@ -16,7 +17,12 @@ export default function ArtistSelect({
   const containerRef = useRef(null);
 
   useEffect(() => {
-    // fetch latest artists from API, fallback to initialArtists
+    // Use initialArtists directly if provided
+    if (Array.isArray(initialArtists) && initialArtists.length > 0) {
+      setOptions(initialArtists);
+      return;
+    }
+    // Only fetch if no initial artists provided
     let mounted = true;
     async function load() {
       try {
@@ -86,6 +92,10 @@ export default function ArtistSelect({
     setSelectedSlug(a.slug);
     setOpen(false);
     setQuery("");
+    // Call onSelect callback if provided
+    if (typeof onSelect === "function") {
+      onSelect({ name: a.name, slug: a.slug });
+    }
   };
 
   return (

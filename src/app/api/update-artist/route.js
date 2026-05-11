@@ -15,6 +15,7 @@ export async function POST(req) {
       name: body.name,
       slug: body.slug,
       slogan: body.slogan,
+      instagramUrl: body.instagramUrl || null,
       bio: body.bio,
       imageUrl: body.imageUrl || null,
     });

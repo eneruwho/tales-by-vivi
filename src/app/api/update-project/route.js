@@ -48,12 +48,17 @@ export async function POST(req) {
       categories: parseCommaSeparatedList(
         body.categories || body.category || "",
       ),
-      subcategories: parseCommaSeparatedList(body.subcategories || ""),
       artistRoles: parseCommaSeparatedList(body.artistRoles || ""),
       imageUrl: body.imageUrl || null,
-      imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [],
-      videoUrl: body.videoUrl || null,
-      videoUrls: Array.isArray(body.videoUrls) ? body.videoUrls : [],
+      imageUrls: Array.isArray(body.imageUrls)
+        ? body.imageUrls
+        : parseCommaSeparatedList(body.imageUrls || ""),
+      youtubeUrl: body.youtubeUrl || null,
+      instagramUrl: body.instagramUrl || null,
+      mediaType: body.mediaType || null,
+      videoUrls: Array.isArray(body.videoUrls)
+        ? body.videoUrls
+        : parseCommaSeparatedList(body.videoUrls || ""),
       description: body.description || null,
       artist,
       artistSlug: body.artistSlug || slugify(artist),

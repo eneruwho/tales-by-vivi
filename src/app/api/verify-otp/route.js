@@ -33,11 +33,12 @@ export async function POST(req) {
 
     // create session
     const sessionId = uuidv4();
+    // Session expires after 40 minutes (30 + 10 minute extension)
     await firestore.createSession({
       sessionId,
       email,
       createdAt: Date.now(),
-      expiresAt: Date.now() + 30 * 60 * 1000,
+      expiresAt: Date.now() + 40 * 60 * 1000,
     });
 
     const res = NextResponse.json({ success: true });
@@ -45,7 +46,7 @@ export async function POST(req) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 30,
+      maxAge: 60 * 40,
     });
     return res;
   } catch (err) {

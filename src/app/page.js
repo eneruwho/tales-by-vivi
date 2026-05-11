@@ -20,6 +20,7 @@ export default async function Home() {
       projects={projects}
       artists={artists}
       showreelUrl={siteSettings?.showreelUrl || null}
+      showreelTitle={siteSettings?.showreelTitle || null}
       clientLogos={clientLogos}
     />
   );

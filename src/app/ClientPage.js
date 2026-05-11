@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import ClientsMarquee from "../components/ClientsMarquee";
+import InstagramEmbed from "../components/InstagramEmbed";
 import styles from "./page.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -136,6 +137,7 @@ export default function ClientPage({
   projects,
   artists = [],
   showreelUrl = null,
+  showreelTitle = null,
   clientLogos = [],
 }) {
   const familyRef = useRef(null);
@@ -146,6 +148,7 @@ export default function ClientPage({
   const heroWheelLockRef = useRef(false);
   const lastFamilyIdxRef = useRef(-1);
   const [activeFamilyIdx, setActiveFamilyIdx] = useState(0);
+  const [activeFamilyProjectIdx, setActiveFamilyProjectIdx] = useState(0);
   const [activeReelIdx, setActiveReelIdx] = useState(0);
   const [showreelCopyStep, setShowreelCopyStep] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -156,6 +159,9 @@ export default function ClientPage({
   const featuredProjects = projects.slice(0, 5);
   const activeProject =
     featuredProjects[activeReelIdx] || featuredProjects[0] || null;
+  const activeProjectMediaType =
+    activeProject?.mediaType ||
+    (activeProject?.instagramUrl ? "instagram" : null);
   const activeArtist = familyArtists[activeFamilyIdx] || null;
   const activeArtistProjects = activeArtist
     ? projects
@@ -168,20 +174,62 @@ export default function ClientPage({
         )
         .slice(0, 6)
     : [];
+
+  // Ensure project index is within bounds when artist changes
+  const safeFamilyProjectIdx =
+    activeFamilyProjectIdx >= activeArtistProjects.length
+      ? 0
+      : activeFamilyProjectIdx;
+
+  const activeFamilyProject =
+    activeArtistProjects[safeFamilyProjectIdx] || null;
   const trailImages = projects
     .filter((project) => Boolean(project.imageUrl))
     .slice(0, 8)
     .map((project) => project.imageUrl);
   const categoryImages = projects.reduce((acc, project) => {
-    if (project.category && project.imageUrl && !acc[project.category]) {
-      acc[project.category] = project.imageUrl;
-    }
+    const cats = Array.isArray(project.categories) ? project.categories : [];
+    const img = project.previewImageUrl || project.imageUrl;
+    cats.forEach((cat) => {
+      if (cat && img && !acc[cat]) {
+        acc[cat] = img;
+      }
+    });
     return acc;
   }, {});
 
+  // Resolve a safe embed URL for a video link (YouTube / Vimeo). Return null if not an embed.
+  function resolveEmbedUrl(url) {
+    if (!url) return null;
+    const s = String(url).trim();
+    const lower = s.toLowerCase();
+
+    // YouTube patterns
+    if (lower.includes("youtube") || lower.includes("youtu.be")) {
+      // try to extract a video id from common URL forms
+      const idMatch = s.match(
+        /(?:v=|\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{6,})/,
+      );
+      const id = idMatch ? idMatch[1] : null;
+      if (id)
+        return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
+    }
+
+    // Vimeo pattern
+    if (lower.includes("vimeo")) {
+      const m = s.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      if (m) return `https://player.vimeo.com/video/${m[1]}`;
+    }
+
+    return null;
+  }
+
   // Category counts from projects + defaults
   const catCounts = projects.reduce((acc, p) => {
-    if (p.category) acc[p.category] = (acc[p.category] || 0) + 1;
+    const cats = Array.isArray(p.categories) ? p.categories : [];
+    cats.forEach((cat) => {
+      acc[cat] = (acc[cat] || 0) + 1;
+    });
     return acc;
   }, {});
   const defaultCategories = {
@@ -257,6 +305,9 @@ export default function ClientPage({
         easing: (t) => 1 - Math.pow(1 - t, 3),
         lock: true,
       });
+
+      // update step immediately so UI and logic can respond while scroll animation runs
+      setShowreelCopyStep(nextStep);
 
       window.setTimeout(() => {
         heroWheelLockRef.current = false;
@@ -479,7 +530,7 @@ export default function ClientPage({
               <div>
                 <div className={styles.showreelTitle}>Showreel</div>
                 <div className={styles.showreelDates}>
-                  {activeProject?.title || "Tales by VIVI"}
+                  {showreelTitle || activeProject?.title || "Tales by VIVI"}
                 </div>
               </div>
             </div>
@@ -550,14 +601,14 @@ export default function ClientPage({
             <CursorTrail containerRef={familyRef} images={trailImages} />
           )}
           <div className={styles.familyInner}>
-            <h2 className={styles.familyTitle}>The Family</h2>
+            <h2 className={styles.familyTitle}>Our Crew</h2>
             <div className={styles.familyLayout}>
               {/* Left: media preview */}
               <div className={styles.familyMedia}>
                 <AnimatePresence mode="wait">
-                  {activeArtist && (
+                  {activeArtist && activeFamilyProject && (
                     <motion.div
-                      key={activeArtist.slug}
+                      key={`${activeArtist.slug}-${activeFamilyProject.id}`}
                       className={styles.familyMediaInner}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -566,13 +617,20 @@ export default function ClientPage({
                     >
                       <Image
                         src={
-                          activeArtistProjects[0]?.imageUrl || FALLBACK_IMAGE
+                          activeFamilyProject.previewImageUrl ||
+                          activeFamilyProject.imageUrl ||
+                          FALLBACK_IMAGE
                         }
-                        alt={activeArtist.name}
+                        alt={activeFamilyProject.title}
                         className={styles.familyMediaImg}
                         fill
                         unoptimized
                       />
+                      <div className={styles.familyMediaOverlay}>
+                        <div className={styles.familyMediaTitle}>
+                          {activeFamilyProject.title}
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -607,11 +665,16 @@ export default function ClientPage({
                   <div className={styles.familyWorkTitle}>Selected Works</div>
                   <div className={styles.familyWorkList}>
                     {activeArtistProjects.length > 0 ? (
-                      activeArtistProjects.map((project) => (
+                      activeArtistProjects.map((project, idx) => (
                         <Link
                           key={project.id}
                           href={`/projects/${project.slug}`}
-                          className={styles.familyWorkItem}
+                          className={`${styles.familyWorkItem} ${
+                            safeFamilyProjectIdx === idx
+                              ? styles.familyWorkItemActive
+                              : ""
+                          }`}
+                          onMouseEnter={() => setActiveFamilyProjectIdx(idx)}
                           data-cursor="hover"
                         >
                           <span>{project.title}</span>
@@ -693,31 +756,88 @@ export default function ClientPage({
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 1.05 }}
                       transition={{ duration: 0.7, ease: "easeOut" }}
-                      className={styles.reelMediaInner}
+                      className={
+                        activeProjectMediaType === "instagram"
+                          ? styles.reelMediaInnerInstagram
+                          : styles.reelMediaInner
+                      }
                     >
-                      <Link
-                        href={`/projects/${activeProject.slug}`}
-                        data-cursor="hover"
-                      >
-                        {activeProject.videoUrl ? (
-                          <iframe
-                            src={activeProject.videoUrl}
-                            title="YouTube video player"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            referrerPolicy="strict-origin-when-cross-origin"
-                            allowFullScreen
-                            className={styles.reelMedia}
+                      {activeProjectMediaType === "instagram" ? (
+                        <div className={styles.reelMediaInstagramFrame}>
+                          <InstagramEmbed
+                            url={activeProject.instagramUrl}
+                            title={activeProject.title}
+                            className={styles.reelInstagramEmbed}
                           />
-                        ) : (
-                          <Image
-                            src={activeProject.imageUrl || FALLBACK_IMAGE}
-                            alt={activeProject.title}
-                            className={styles.reelMedia}
-                            fill
-                            unoptimized
+                          <Link
+                            href={`/projects/${activeProject.slug}`}
+                            className={styles.reelMediaHitArea}
+                            aria-label={`Open ${activeProject.title}`}
+                            data-cursor="hover"
                           />
-                        )}
-                      </Link>
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/projects/${activeProject.slug}`}
+                          data-cursor="hover"
+                        >
+                          {/* Render only when we can resolve a safe embed URL; otherwise show preview image */}
+                          {(() => {
+                            const embedSrc = resolveEmbedUrl(
+                              (activeProject &&
+                                (activeProject.youtubeUrl ||
+                                  activeProject.videoUrl)) ||
+                                null,
+                            );
+
+                            if (embedSrc) {
+                              return (
+                                <iframe
+                                  src={embedSrc}
+                                  title="Video player"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                  allowFullScreen
+                                  className={styles.reelMedia}
+                                />
+                              );
+                            }
+
+                            return (
+                              <div className={styles.reelMediaImageWrap}>
+                                <Image
+                                  src={
+                                    activeProject.imageUrl ||
+                                    activeProject.previewImageUrl ||
+                                    FALLBACK_IMAGE
+                                  }
+                                  alt={activeProject.title}
+                                  className={styles.reelMedia}
+                                  fill
+                                  unoptimized
+                                />
+                                {/* overlay with subcategories on hover */}
+                                <div
+                                  className={styles.reelMediaOverlay}
+                                  aria-hidden
+                                >
+                                  {(
+                                    activeProject.subcategories ||
+                                    activeProject.subcategory ||
+                                    []
+                                  )
+                                    .toString()
+                                    .split(",")
+                                    .map((s) => s.trim())
+                                    .filter(Boolean)
+                                    .slice(0, 6)
+                                    .join(" • ")}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </Link>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

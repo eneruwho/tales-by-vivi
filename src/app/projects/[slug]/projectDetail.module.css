@@ -70,6 +70,38 @@
   z-index: 1;
 }
 
+.heroInstagramStage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 1.25rem 3rem;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.42) 35%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+.heroInstagramFrame {
+  width: min(100%, 540px);
+  max-height: calc(100vh - 10rem);
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+}
+
+.heroInstagramFrame :global(.instagram-media) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
 .heroOverlay {
   position: absolute;
   inset: 0;
@@ -86,7 +118,7 @@
 .heroContent {
   position: relative;
   z-index: 2;
-  padding: 0 4vw 4.5rem;
+  padding: 6rem 4vw 4.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
@@ -214,6 +246,7 @@
   aspect-ratio: 16 / 9;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
+  position: relative;
 }
 
 .thumbImage {
@@ -243,6 +276,16 @@
   .hero {
     height: 100svh;
     min-height: 480px;
+  }
+
+  .heroInstagramStage {
+    padding: 5rem 0.75rem 2.25rem;
+  }
+
+  .heroInstagramFrame {
+    width: 100%;
+    max-height: calc(100svh - 7.25rem);
+    border-radius: 14px;
   }
 
   .content {

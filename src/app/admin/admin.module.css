@@ -32,6 +32,250 @@
   color: var(--fg);
 }
 
+.adminDashboard {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1.25rem 0 2rem 0;
+}
+
+.dashboardButton {
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dashboardButtonWhite {
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+}
+
+.adminControlsTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.controlButtons {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.toggleBtn {
+  padding: 0.5rem 0.7rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+}
+
+.toggleActive {
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--color-red);
+  color: var(--color-red);
+  border-radius: 6px;
+}
+
+.tableWrapperCompact {
+  background: transparent;
+  margin-bottom: 1.25rem;
+  overflow: auto;
+}
+
+.updateSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.updatePanel {
+  flex: 1 1 60%;
+}
+
+.updateButtons {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modalContent {
+  width: min(1100px, 96%);
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--surface);
+  padding: 1.25rem;
+  border-radius: 10px;
+  position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modalContent::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.modalClose {
+  position: absolute;
+  right: 0.6rem;
+  top: 0.4rem;
+  border: none;
+  background: transparent;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #fff;
+  z-index: 10001;
+}
+
+.dashboardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboardIntro h2 {
+  margin: 0 0 0.25rem 0;
+}
+
+.dashboardSub {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dashboardStats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.statCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+  min-width: 120px;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.tablePanel {
+  background: transparent;
+  padding: 0.25rem 0;
+}
+
+.tableWrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader th {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.tableRow td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+  color: var(--fg);
+}
+
+.tableAction {
+  color: var(--color-red);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-red);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.actionButton {
+  color: var(--color-red);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-red);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.actionButton:hover,
+.tableAction:hover {
+  background: rgba(255, 0, 0, 0.08);
+}
+
+.previewLink {
+  color: var(--fg);
+  text-decoration: underline;
+}
+
+@media (min-width: 980px) {
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 2fr;

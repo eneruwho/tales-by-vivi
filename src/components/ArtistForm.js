@@ -1,27 +1,51 @@
 "use client";
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { addArtist, deleteArtist } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import ArtistEditInline from "./ArtistEditInline";
 import Toast from "./Toast";
 import Loader from "./Loader";
 
-export default function ArtistForm({ initialArtists = [] }) {
+export default function ArtistForm({ initialArtists = [], onSaved }) {
   const formRef = useRef(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [artists, setArtists] = useState(initialArtists);
+  const [artistPreviewSrc, setArtistPreviewSrc] = useState(null);
 
   async function handleAddArtist(formData) {
     setError(null);
     setSuccess(null);
     setLoading(true);
     try {
+      // If an image file is present, upload it first to ensure success
+      const artistFile = formData.get("artistImage");
+      if (artistFile && artistFile.size > 0) {
+        const fd = new FormData();
+        fd.append("file", artistFile);
+        fd.append("folder", "artists");
+        const up = await fetch("/api/cloudinary-upload-file", {
+          method: "POST",
+          body: fd,
+        });
+        const upJson = await up.json();
+        if (!up.ok || upJson?.error) {
+          throw new Error(upJson?.error || "Failed to upload artist image");
+        }
+        const imgUrl = upJson.result?.secure_url || upJson.result?.url || null;
+        if (imgUrl) {
+          formData.set("imageUrl", imgUrl);
+          formData.delete("artistImage");
+        }
+      }
+
       const created = await addArtist(formData);
       setSuccess("Artist added successfully!");
       if (created) setArtists((prev) => [...prev, created]);
+      if (created && onSaved) onSaved(created);
       setTimeout(() => {
         const form = formRef.current;
         if (form) form.reset();
@@ -30,6 +54,17 @@ export default function ArtistForm({ initialArtists = [] }) {
       setError(err?.message || "Failed to add artist");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleArtistImageChange(e) {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setArtistPreviewSrc(ev.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      setArtistPreviewSrc(null);
     }
   }
 
@@ -149,7 +184,24 @@ export default function ArtistForm({ initialArtists = [] }) {
               accept="image/*"
               className={styles.input}
               disabled={loading}
+              onChange={handleArtistImageChange}
             />
+            {artistPreviewSrc && (
+              <div style={{ marginTop: "0.5rem" }}>
+                <Image
+                  src={artistPreviewSrc}
+                  alt="Artist thumbnail"
+                  width={120}
+                  height={120}
+                  style={{
+                    objectFit: "cover",
+                    borderRadius: 6,
+                    border: "1px solid #ddd",
+                  }}
+                  unoptimized
+                />
+              </div>
+            )}
           </div>
 
           <button type="submit" className={styles.button} disabled={loading}>

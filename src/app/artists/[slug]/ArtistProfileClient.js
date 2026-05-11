@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import styles from "./artistDetail.module.css";
 import Link from "next/link";
-
+import Image from "next/image";
 export default function ArtistProfileClient({ artist, projects }) {
   const heroRef = useRef(null);
   const gridRef = useRef(null);
@@ -51,18 +51,16 @@ export default function ArtistProfileClient({ artist, projects }) {
       <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroGrid}>
           <div className={styles.heroImage}>
-            <img
-              src={artist.imageUrl || artist.previewImageUrl || placeholderImage}
+            <Image
+              src={
+                artist.imageUrl || artist.previewImageUrl || placeholderImage
+              }
               alt={artist.name}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                aspectRatio: "4 / 5",
-              }}
-              onError={(e) => {
-                e.currentTarget.src = placeholderImage;
-              }}
+              width={800}
+              height={1000}
+              style={{ objectFit: "cover" }}
+              unoptimized
+              onError={() => {}}
             />
           </div>
           <div>
@@ -71,6 +69,42 @@ export default function ArtistProfileClient({ artist, projects }) {
               className={styles.slogan}
             >{`"${artist.slogan || "Simply Better Than Reality"}"`}</p>
             <p className={styles.bio}>{artist.bio}</p>
+            {artist.instagramUrl && (
+              <p className={styles.socialRow}>
+                <a
+                  href={artist.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.instagramLink}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    style={{ marginRight: 8 }}
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="20"
+                      height="20"
+                      rx="5"
+                      ry="5"
+                    ></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <line x1="17.5" y1="6.5" x2="17.5" y2="6.5"></line>
+                  </svg>
+                  Instagram
+                </a>
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -85,17 +119,22 @@ export default function ArtistProfileClient({ artist, projects }) {
               data-cursor="hover"
             >
               <div className={styles.mediaWrapper}>
-                
-                  <img
-                    src={project.imageUrl}
-                    alt={project.title}
-                    className={styles.image}
-                  />
-                
+                <Image
+                  src={project.previewImageUrl || project.imageUrl || ""}
+                  alt={project.title}
+                  className={styles.image}
+                  width={1600}
+                  height={900}
+                  unoptimized
+                />
               </div>
               <div className={styles.info}>
                 <h3>{project.title}</h3>
-                <span>{project.category}</span>
+                <span>
+                  {Array.isArray(project.categories)
+                    ? project.categories.join(", ")
+                    : project.category || ""}
+                </span>
               </div>
             </Link>
           ))}

@@ -15,7 +15,9 @@ export async function POST(req) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       const filename = file.name || `upload-${Date.now()}`;
-      const result = await uploadBuffer(buffer, folder, "video", filename);
+      const resourceType =
+        file.type && file.type.startsWith("video/") ? "video" : "image";
+      const result = await uploadBuffer(buffer, folder, resourceType, filename);
       return NextResponse.json({ success: true, result });
     } catch (err) {
       return NextResponse.json(

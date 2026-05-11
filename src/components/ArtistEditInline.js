@@ -7,6 +7,9 @@ export default function ArtistEditInline({ artist, onSaved }) {
   const [name, setName] = useState(artist.name);
   const [slug, setSlug] = useState(artist.slug);
   const [imageUrl, setImageUrl] = useState(artist.imageUrl || "");
+  const [slogan, setSlogan] = useState(artist.slogan || "");
+  const [instagramUrl, setInstagramUrl] = useState(artist.instagramUrl || "");
+  const [bio, setBio] = useState(artist.bio || "");
   const [loading, setLoading] = useState(false);
 
   async function save() {
@@ -15,7 +18,15 @@ export default function ArtistEditInline({ artist, onSaved }) {
       const res = await fetch("/api/update-artist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: artist.id, name, slug, imageUrl }),
+        body: JSON.stringify({
+          id: artist.id,
+          name,
+          slug,
+          imageUrl,
+          slogan,
+          instagramUrl,
+          bio,
+        }),
       });
       const json = await res.json();
       if (json?.artist) {
@@ -59,6 +70,24 @@ export default function ArtistEditInline({ artist, onSaved }) {
             onChange={(e) => setImageUrl(e.target.value)}
             className={styles.input}
             placeholder="Profile image URL"
+          />
+          <input
+            value={slogan}
+            onChange={(e) => setSlogan(e.target.value)}
+            className={styles.input}
+            placeholder="Slogan"
+          />
+          <input
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            className={styles.input}
+            placeholder="Instagram URL"
+          />
+          <input
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            className={styles.input}
+            placeholder="Short bio"
           />
           <button onClick={save} disabled={loading} className={styles.button}>
             {loading ? "Saving…" : "Save"}

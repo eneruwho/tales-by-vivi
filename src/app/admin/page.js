@@ -1,11 +1,7 @@
 import { getProjects, getArtists, getClientLogos } from "../actions";
 import styles from "./admin.module.css";
 import Link from "next/link";
-import ProjectForm from "../../components/ProjectForm";
-import ShowreelForm from "../../components/ShowreelForm";
-import ClientLogosForm from "../../components/ClientLogosForm";
-import ArtistForm from "../../components/ArtistForm";
-import ProjectsList from "../../components/ProjectsList";
+import AdminPanel from "../../components/AdminPanel";
 
 export default async function AdminPage() {
   const [projects, artists, clientLogos] = await Promise.all([
@@ -20,21 +16,31 @@ export default async function AdminPage() {
         <h1>TALES BY VIVI CMS</h1>
         <Link href="/">Return to Site</Link>
       </header>
-
-      <div
-        className={styles.grid}
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))" }}
-      >
-        <ShowreelForm />
-
-        <ClientLogosForm initialLogos={clientLogos} />
-
-        <ProjectForm artists={artists} />
-
-        <ArtistForm initialArtists={artists} />
-
-        <ProjectsList initialProjects={projects} />
+      <div className={styles.dashboardIntro}>
+        <h2>Dashboard</h2>
+        <p className={styles.dashboardSub}>Quick overview and actions</p>
       </div>
+
+      <div className={styles.dashboardStats}>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Projects</div>
+          <div className={styles.statValue}>{projects.length}</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Artists</div>
+          <div className={styles.statValue}>{artists.length}</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Client Logos</div>
+          <div className={styles.statValue}>{clientLogos?.length || 0}</div>
+        </div>
+      </div>
+
+      <AdminPanel
+        projects={projects}
+        artists={artists}
+        clientLogos={clientLogos}
+      />
     </div>
   );
 }

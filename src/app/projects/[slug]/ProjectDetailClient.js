@@ -5,6 +5,7 @@ import styles from "./projectDetail.module.css";
 import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
+import InstagramEmbed from "../../../components/InstagramEmbed";
 
 function buildGallery(project) {
   const seen = new Set();
@@ -44,6 +45,8 @@ export default function ProjectDetailClient({ project }) {
   const artistRoles = Array.isArray(project.artistRoles)
     ? project.artistRoles
     : [];
+  const mediaType =
+    project.mediaType || (project.instagramUrl ? "instagram" : "youtube");
   // Normalize various YouTube URL formats into an embed URL
   function toYouTubeEmbed(url) {
     if (!url || typeof url !== "string") return null;
@@ -70,6 +73,8 @@ export default function ProjectDetailClient({ project }) {
       project.videoUrl ||
       (Array.isArray(project.videoUrls) ? project.videoUrls[0] : null),
   );
+  const instagramUrl = project.instagramUrl || null;
+  const hasInstagramEmbed = mediaType === "instagram" && instagramUrl;
 
   useEffect(() => {
     gsap.fromTo(
@@ -114,7 +119,15 @@ export default function ProjectDetailClient({ project }) {
 
       {/* ── HERO ── */}
       <section className={styles.hero}>
-        {youtubeEmbedUrl && (
+        {hasInstagramEmbed ? (
+          <div className={styles.heroInstagramStage}>
+            <InstagramEmbed
+              url={instagramUrl}
+              title={project.title}
+              className={styles.heroInstagramFrame}
+            />
+          </div>
+        ) : youtubeEmbedUrl ? (
           <iframe
             src={youtubeEmbedUrl}
             title={project.title}
@@ -122,7 +135,7 @@ export default function ProjectDetailClient({ project }) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
-        )}
+        ) : null}
         <div className={styles.heroOverlay} />
 
         <div className={styles.heroContent}>
@@ -160,7 +173,8 @@ export default function ProjectDetailClient({ project }) {
           )}
 
           {/* video already used as hero background; no inline duplicate */}
-          {!youtubeEmbedUrl &&
+          {!hasInstagramEmbed &&
+            !youtubeEmbedUrl &&
             (project.youtubeUrl ||
               project.videoUrl ||
               (project.videoUrls && project.videoUrls[0])) && (

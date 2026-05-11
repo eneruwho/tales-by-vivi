@@ -14,9 +14,27 @@ export default function ArtistsClient({ artists, projects }) {
   // Aggregate data so we know the artist and all their projects (memoized)
   const displayArtists = useMemo(() => {
     return artists.map((artist) => {
-      const artistProjects = projects.filter(
-        (p) => p.artistSlug === artist.slug || p.artist === artist.name,
-      );
+      const nameLower = String(artist.name || "").toLowerCase();
+      const artistProjects = projects.filter((p) => {
+        // match by slug
+        if (p.artistSlug && p.artistSlug === artist.slug) return true;
+        const artistField = p.artist || "";
+        // if stored as array of names
+        if (Array.isArray(artistField)) {
+          return artistField
+            .map((s) => String(s || "").toLowerCase())
+            .includes(nameLower);
+        }
+        // handle comma-separated names or simple contains check
+        const parts = String(artistField)
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+        if (parts.includes(nameLower)) return true;
+        return String(artistField || "")
+          .toLowerCase()
+          .includes(nameLower);
+      });
       return {
         ...artist,
         projects: artistProjects,
@@ -105,7 +123,10 @@ export default function ArtistsClient({ artists, projects }) {
         >
           {activeArtist.cover && (
             <img
-              src={activeArtist.cover.imageUrl}
+              src={
+                activeArtist.cover.previewImageUrl ||
+                activeArtist.cover.imageUrl
+              }
               alt=""
               className={styles.bgImage}
             />
@@ -167,7 +188,9 @@ export default function ArtistsClient({ artists, projects }) {
                   }}
                 >
                   <img
-                    src={activeProject.imageUrl}
+                    src={
+                      activeProject.previewImageUrl || activeProject.imageUrl
+                    }
                     alt={activeProject.title}
                     className={styles.media}
                   />

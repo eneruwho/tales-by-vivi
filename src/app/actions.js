@@ -110,9 +110,6 @@ export async function addProject(formData) {
     throw new Error("At least one category is required");
   }
 
-  const subcategories = parseCommaSeparatedList(
-    formData.get("subcategories") || "",
-  );
   const artistRoles = parseCommaSeparatedList(
     formData.get("artistRoles") || "",
   );
@@ -130,42 +127,67 @@ export async function addProject(formData) {
     formData.getAll("projectImages"),
     "project",
   );
-  // Upload preview image
-  const uploadedPreviewImages = await uploadFiles(
-    formData.getAll("previewImage"),
-    "project_preview",
-  );
-
   const uploadedVideos = await uploadFiles(
     formData.getAll("projectVideos"),
     "project",
   );
 
+  // Upload preview image (required)
+  const uploadedPreview = await uploadFiles(
+    formData.getAll("previewImage"),
+    "project_preview",
+  );
+
+  const previewImageUrl =
+    uploadedPreview[0]?.url || formData.get("previewImageUrl") || null;
+
   const youtubeUrl = formData.get("youtubeUrl") || null;
+  const instagramUrl = formData.get("instagramUrl") || null;
+  const mediaType = formData.get("mediaType") || null;
 
   const imageUrl = formData.get("imageUrl") || uploadedImages[0]?.url || null;
-  const previewImageUrl = uploadedPreviewImages[0]?.url || null;
-  const videoUrl = formData.get("videoUrl") || uploadedVideos[0]?.url || null;
+  const videoUrl = uploadedVideos[0]?.url || null;
 
-  await db.addProject({
+  // Server-side validations
+  if (!previewImageUrl) {
+    throw new Error("Preview image is required");
+  }
+
+  if (mediaType === "youtube" && !youtubeUrl) {
+    throw new Error("YouTube URL is required for YouTube media type");
+  }
+  if (mediaType === "instagram" && !instagramUrl) {
+    throw new Error("Instagram URL is required for Instagram media type");
+  }
+
+  // Require at least one media source for the project itself (image or embed URL)
+  if (!imageUrl && !youtubeUrl && !instagramUrl) {
+    throw new Error(
+      "Please provide a project image URL or a YouTube or Instagram URL",
+    );
+  }
+
+  const created = await db.addProject({
     title,
     slug,
     categories,
-    subcategories,
     artistRoles,
     imageUrl,
     imageUrls: uploadedImages.map((item) => item.url).filter(Boolean),
-    previewImageUrl,
     videoUrl,
     videoUrls: uploadedVideos.map((item) => item.url).filter(Boolean),
     youtubeUrl,
+    instagramUrl,
+    mediaType,
+    previewImageUrl,
     description: formData.get("description") || null,
     artist,
     artistSlug,
   });
-
   revalidatePath("/admin");
   revalidatePath("/");
+
+  return created;
 }
 
 export async function addArtist(formData) {
@@ -200,11 +222,19 @@ export async function updateShowreel(formData) {
     ? showreelUrl.trim()
     : null;
 
+  const showreelTitle = formData.get("showreelTitle");
+  const resolvedShowreelTitle = hasNonEmptyString(showreelTitle)
+    ? showreelTitle.trim()
+    : null;
+
   if (!resolvedShowreelUrl) {
     throw new Error("Please provide a showreel URL");
   }
 
-  await db.setSiteSettings({ showreelUrl: resolvedShowreelUrl });
+  await db.setSiteSettings({
+    showreelUrl: resolvedShowreelUrl,
+    showreelTitle: resolvedShowreelTitle,
+  });
   revalidatePath("/");
   revalidatePath("/admin");
 }
@@ -266,9 +296,24 @@ export async function updateProject(id, formData) {
   );
 
   const imageUrl = formData.get("imageUrl") || uploadedImages[0]?.url || null;
-  const previewImageUrl = uploadedPreviewImages[0]?.url || null;
+  const previewImageUrl =
+    uploadedPreviewImages[0]?.url || formData.get("previewImageUrl") || null;
   const videoUrl = formData.get("videoUrl") || uploadedVideos[0]?.url || null;
   const youtubeUrl = formData.get("youtubeUrl") || null;
+  const instagramUrl = formData.get("instagramUrl") || null;
+  const mediaType = formData.get("mediaType") || null;
+
+  // preview image is required
+  if (!previewImageUrl) {
+    throw new Error("Preview image is required");
+  }
+
+  // Require at least one media source for the project itself (image or embed URL)
+  if (!imageUrl && !youtubeUrl && !instagramUrl) {
+    throw new Error(
+      "Please provide a project image URL or a YouTube or Instagram URL",
+    );
+  }
 
   await db.updateProject(id, {
     id,
@@ -283,6 +328,8 @@ export async function updateProject(id, formData) {
     videoUrl,
     videoUrls: uploadedVideos.map((item) => item.url).filter(Boolean),
     youtubeUrl,
+    instagramUrl,
+    mediaType,
     description: formData.get("description") || null,
     artist,
     artistSlug,

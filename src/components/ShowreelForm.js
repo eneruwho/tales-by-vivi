@@ -38,6 +38,9 @@ export default function ShowreelForm() {
   async function handleSubmit(formData) {
     setError(null);
     setSuccess(null);
+    const showreelTitle = formData.get("showreelTitle");
+    const hasShowreelTitle =
+      typeof showreelTitle === "string" && showreelTitle.trim().length > 0;
 
     const showreelUrl = formData.get("showreelUrl");
     const hasShowreelUrl =
@@ -52,6 +55,19 @@ export default function ShowreelForm() {
     if (!hasShowreelUrl && !hasShowreelVideo) {
       setError("Please add a showreel URL or upload a video before saving.");
       return;
+    }
+
+    // If user is uploading a video file, require a title and validate file type
+    if (hasShowreelVideo) {
+      if (!hasShowreelTitle) {
+        setError("Please provide a showreel title when uploading a video.");
+        return;
+      }
+      const type = showreelVideo.type || "";
+      if (!type.startsWith("video/")) {
+        setError("Uploaded file must be a video file.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -115,6 +131,16 @@ export default function ShowreelForm() {
           </div>
         )}
         <form action={handleSubmit} ref={formRef}>
+          <div className={styles.inputGroup}>
+            <label>Showreel Title (optional)</label>
+            <input
+              type="text"
+              name="showreelTitle"
+              placeholder="e.g. Tales by VIVI — 2026"
+              className={styles.input}
+              disabled={loading}
+            />
+          </div>
           <div className={styles.inputGroup}>
             <label>Showreel URL</label>
             <input
