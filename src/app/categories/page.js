@@ -32,5 +32,23 @@ export default async function CategoriesPage() {
   const categories =
     Object.keys(categoryCounts).length > 0 ? categoryCounts : defaultCategories;
 
-  return <CategoriesClient categories={categories} />;
+  // Build representative image per category from projects (prefer previewImageUrl)
+  const categoryImages = Object.keys(categories).reduce((acc, cat) => {
+    const p = projects.find((proj) => {
+      const cats = Array.isArray(proj.categories)
+        ? proj.categories
+        : proj.category
+          ? String(proj.category)
+              .split(",")
+              .map((s) => s.trim())
+          : [];
+      return cats.includes(cat) && (proj.previewImageUrl || proj.imageUrl);
+    });
+    if (p) acc[cat] = p.previewImageUrl || p.imageUrl;
+    return acc;
+  }, {});
+
+  return (
+    <CategoriesClient categories={categories} categoryImages={categoryImages} />
+  );
 }

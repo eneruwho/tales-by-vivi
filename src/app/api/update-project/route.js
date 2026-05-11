@@ -50,6 +50,7 @@ export async function POST(req) {
       ),
       artistRoles: parseCommaSeparatedList(body.artistRoles || ""),
       imageUrl: body.imageUrl || null,
+      previewImageUrl: body.previewImageUrl || null,
       imageUrls: Array.isArray(body.imageUrls)
         ? body.imageUrls
         : parseCommaSeparatedList(body.imageUrls || ""),
