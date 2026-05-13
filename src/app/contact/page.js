@@ -78,7 +78,7 @@ export default function ContactPage() {
             <h3>Social</h3>
             <p>
               <a
-                href="https://www.instagram.com/"
+                href="https://www.instagram.com/talesby.vivi/"
                 target="_blank"
                 rel="noreferrer"
                 data-cursor="hover"

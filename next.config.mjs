@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/dsyvbjozy/**",
+      },
+    ],
+  },
   serverExternalPackages: ["better-sqlite3"],
   experimental: {
     proxyClientMaxBodySize: "500mb",

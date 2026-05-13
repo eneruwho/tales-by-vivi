@@ -5,23 +5,15 @@ import styles from "../app/admin/admin.module.css";
 import ArtistSelect from "./ArtistSelect";
 import Loader from "./Loader";
 import Toast from "./Toast";
+import { buildProjectArtistSelections } from "../lib/projectArtists";
 
 export default function EditProjectForm({ project, artists = [], onSaved }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedArtists, setSelectedArtists] = useState(() => {
-    // Parse existing artists from the project
-    if (typeof project.artist === "string") {
-      const names = project.artist.split(",").map((n) => n.trim());
-      const slugs = (project.artistSlug || "").split(",").map((s) => s.trim());
-      return names.map((name, idx) => ({
-        name,
-        slug: slugs[idx] || name.toLowerCase(),
-      }));
-    }
-    return [];
-  });
+  const [selectedArtists, setSelectedArtists] = useState(() =>
+    buildProjectArtistSelections(project, artists),
+  );
   const [mediaType, setMediaType] = useState(() => {
     if (project.instagramUrl) return "instagram";
     if (project.youtubeUrl) return "youtube";
@@ -74,14 +66,7 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
         instagramUrl: form.instagramUrl?.value || null,
         mediaType: mediaType || "none",
         description: form.description.value,
-        artist:
-          selectedArtists.length > 0
-            ? selectedArtists.map((a) => a.name).join(", ")
-            : form.artist.value,
-        artistSlug:
-          selectedArtists.length > 0
-            ? selectedArtists.map((a) => a.slug).join(", ")
-            : "",
+        artistSlugs: selectedArtists.map((a) => a.slug),
       };
 
       // Client-side validation: require at least one project media source
@@ -92,6 +77,9 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
         throw new Error(
           "Please provide a project image URL or a YouTube or Instagram URL",
         );
+      }
+      if (selectedArtists.length === 0) {
+        throw new Error("Please select at least one artist for this project");
       }
 
       // Media-type-specific validation
@@ -238,6 +226,7 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
                 <ArtistSelect
                   artists={artists}
                   defaultArtist=""
+                  includeHiddenFields={false}
                   onSelect={(artist) => handleAddArtist(artist)}
                 />
               </div>
@@ -284,16 +273,6 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
                 ))}
               </div>
             )}
-            <input
-              type="hidden"
-              name="artist"
-              value={selectedArtists.map((a) => a.name).join(", ")}
-            />
-            <input
-              type="hidden"
-              name="artistSlug"
-              value={selectedArtists.map((a) => a.slug).join(", ")}
-            />
           </div>
 
           <div className={styles.inputGroup}>

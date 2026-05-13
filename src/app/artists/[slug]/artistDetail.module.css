@@ -115,6 +115,21 @@
   height: 100%;
 }
 
+.instagramPlaceholder,
+.noImagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.06));
+}
+
+.instagramPlaceholder svg {
+  opacity: 0.9;
+}
+
 .video,
 .image {
   width: 100%;
@@ -159,6 +174,20 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   transition: color 0.3s ease;
+}
+
+.coArtistRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.5rem;
+}
+
+.coArtistText {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {

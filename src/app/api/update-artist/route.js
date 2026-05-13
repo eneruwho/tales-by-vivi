@@ -22,6 +22,7 @@ export async function POST(req) {
     // Revalidate relevant pages so the public artists list updates immediately
     try {
       revalidatePath("/artists");
+      revalidatePath("/projects");
       revalidatePath("/");
     } catch (e) {
       // ignore; revalidation isn't critical if it fails

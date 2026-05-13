@@ -3,6 +3,8 @@ import styles from "../../admin.module.css";
 import { getProjects, updateProject } from "../../../actions";
 import EditProjectForm from "../../../../components/EditProjectForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditProjectPage({ params }) {
   const { id } = await params;
   const numId = Number(id);

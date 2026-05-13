@@ -6,6 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
 import InstagramEmbed from "../../../components/InstagramEmbed";
+import {
+  getProjectArtistEntries,
+  getProjectArtistLabel,
+} from "../../../lib/projectArtists";
 
 function buildGallery(project) {
   const seen = new Set();
@@ -75,6 +79,7 @@ export default function ProjectDetailClient({ project }) {
   );
   const instagramUrl = project.instagramUrl || null;
   const hasInstagramEmbed = mediaType === "instagram" && instagramUrl;
+  const projectArtists = getProjectArtistEntries(project);
 
   useEffect(() => {
     gsap.fromTo(
@@ -107,13 +112,7 @@ export default function ProjectDetailClient({ project }) {
   return (
     <div className={styles.container} ref={containerRef}>
       {/* Close / back */}
-      <Link
-        href={
-          project.artistSlug ? `/artists/${project.artistSlug}` : "/artists"
-        }
-        className={styles.closeBtn}
-        data-cursor="hover"
-      >
+      <Link href="/projects" className={styles.closeBtn} data-cursor="hover">
         <X size={28} />
       </Link>
 
@@ -139,7 +138,24 @@ export default function ProjectDetailClient({ project }) {
         <div className={styles.heroOverlay} />
 
         <div className={styles.heroContent}>
-          <span className={styles.artistName}>{project.artist}</span>
+          <div className={styles.artistRow}>
+            {projectArtists.length > 0 ? (
+              projectArtists.map((artist) => (
+                <Link
+                  key={artist.slug}
+                  href={`/artists/${artist.slug}`}
+                  className={styles.artistLink}
+                  data-cursor="hover"
+                >
+                  {artist.name}
+                </Link>
+              ))
+            ) : (
+              <span className={styles.artistName}>
+                {getProjectArtistLabel(project) || "Artists"}
+              </span>
+            )}
+          </div>
           <h1 className={styles.title}>{project.title}</h1>
 
           {categories.length > 0 && (

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { deleteProject } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import Toast from "./Toast";
+import { getProjectArtistLabel } from "../lib/projectArtists";
 
 export default function ProjectsList({ initialProjects = [] }) {
   const [projects, setProjects] = useState(initialProjects);
@@ -37,7 +38,7 @@ export default function ProjectsList({ initialProjects = [] }) {
                   {Array.isArray(project.categories)
                     ? project.categories.join(", ")
                     : project.category}{" "}
-                  | {project.artist}
+                  | {getProjectArtistLabel(project) || "Unknown artists"}
                 </p>
                 {Array.isArray(project.subcategories) &&
                   project.subcategories.length > 0 && (

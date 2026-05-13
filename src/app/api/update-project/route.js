@@ -22,6 +22,32 @@ function parseCommaSeparatedList(value) {
     .filter(Boolean);
 }
 
+function parseArtistSlugList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const slug = value.trim();
+    return slug ? [slug] : [];
+  }
+
+  return [];
+}
+
+function revalidateProjectPaths(project) {
+  revalidatePath("/projects");
+  revalidatePath("/artists");
+  if (project?.slug) {
+    revalidatePath(`/projects/${project.slug}`);
+  }
+  (Array.isArray(project?.artistSlugs) ? project.artistSlugs : []).forEach(
+    (slug) => {
+      if (slug) revalidatePath(`/artists/${slug}`);
+    },
+  );
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -31,7 +57,13 @@ export async function POST(req) {
     }
 
     const title = body.title || "";
-    const artist = body.artist || "";
+    const artistSlugs = parseArtistSlugList(body.artistSlugs);
+    if (artistSlugs.length === 0) {
+      return NextResponse.json(
+        { error: "Please select at least one artist for this project" },
+        { status: 400 },
+      );
+    }
     // find previous project to detect artist change
     let prevProject = null;
     try {
@@ -61,21 +93,23 @@ export async function POST(req) {
         ? body.videoUrls
         : parseCommaSeparatedList(body.videoUrls || ""),
       description: body.description || null,
-      artist,
-      artistSlug: body.artistSlug || slugify(artist),
+      artistSlugs,
     });
     try {
       revalidatePath("/");
-      revalidatePath("/projects");
-      revalidatePath(`/projects/${updated.slug}`);
+      revalidateProjectPaths(updated);
       revalidatePath("/admin");
-      // if project changed artist, revalidate both old and new artist pages
-      const newArtistSlug = updated.artistSlug;
-      const oldArtistSlug = prevProject?.artistSlug || null;
-      if (oldArtistSlug && oldArtistSlug !== newArtistSlug) {
-        revalidatePath(`/artists/${oldArtistSlug}`);
+      if (prevProject?.slug && prevProject.slug !== updated.slug) {
+        revalidatePath(`/projects/${prevProject.slug}`);
       }
-      if (newArtistSlug) revalidatePath(`/artists/${newArtistSlug}`);
+      const oldArtistSlugs = Array.isArray(prevProject?.artistSlugs)
+        ? prevProject.artistSlugs
+        : [];
+      oldArtistSlugs.forEach((slug) => {
+        if (slug && !updated.artistSlugs.includes(slug)) {
+          revalidatePath(`/artists/${slug}`);
+        }
+      });
     } catch (e) {
       // ignore revalidation errors
     }

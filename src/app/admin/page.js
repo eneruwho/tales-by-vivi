@@ -3,6 +3,8 @@ import styles from "./admin.module.css";
 import Link from "next/link";
 import AdminPanel from "../../components/AdminPanel";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const [projects, artists, clientLogos] = await Promise.all([
     getProjects(),

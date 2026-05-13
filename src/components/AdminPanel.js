@@ -14,6 +14,7 @@ import {
   addArtist,
 } from "../app/actions";
 import Toast from "./Toast";
+import { getProjectArtistLabel, getProjectArtistSlugs } from "../lib/projectArtists";
 
 export default function AdminPanel({
   projects = [],
@@ -245,13 +246,13 @@ export default function AdminPanel({
               const filtered = rowsProjects.filter((p) => {
                 const q = search.trim().toLowerCase();
                 if (!q) return true;
+                const artistLabel = getProjectArtistLabel(p).toLowerCase();
                 return (
                   String(p.title || "")
                     .toLowerCase()
                     .includes(q) ||
-                  String(p.artist || "")
-                    .toLowerCase()
-                    .includes(q) ||
+                  artistLabel.includes(q) ||
+                  getProjectArtistSlugs(p).join(" ").toLowerCase().includes(q) ||
                   String(p.slug || "")
                     .toLowerCase()
                     .includes(q)
@@ -260,10 +261,18 @@ export default function AdminPanel({
 
               // sort
               filtered.sort((a, b) => {
-                const aVal = String(a[sortKey] || "").toLowerCase();
-                const bVal = String(b[sortKey] || "").toLowerCase();
-                if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
-                if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+                const aVal =
+                  sortKey === "artist"
+                    ? getProjectArtistLabel(a)
+                    : String(a[sortKey] || "");
+                const bVal =
+                  sortKey === "artist"
+                    ? getProjectArtistLabel(b)
+                    : String(b[sortKey] || "");
+                const aNorm = aVal.toLowerCase();
+                const bNorm = bVal.toLowerCase();
+                if (aNorm < bNorm) return sortDir === "asc" ? -1 : 1;
+                if (aNorm > bNorm) return sortDir === "asc" ? 1 : -1;
                 return 0;
               });
 
@@ -290,7 +299,9 @@ export default function AdminPanel({
                         <tr key={p.id} className={styles.tableRow}>
                           <td className={styles.tableCell}>{p.id}</td>
                           <td className={styles.tableCell}>{p.title}</td>
-                          <td className={styles.tableCell}>{p.artist}</td>
+                          <td className={styles.tableCell}>
+                            {getProjectArtistLabel(p) || "Unknown artists"}
+                          </td>
                           <td className={styles.tableCell}>
                             {(p.categories || p.category || []).toString()}
                           </td>
@@ -605,7 +616,19 @@ export default function AdminPanel({
                         ? it.categories.join(",")
                         : it.category || "",
                     );
-                    f.append("artist", it.artist || "");
+                    (Array.isArray(it.artistSlugs) ? it.artistSlugs : []).forEach(
+                      (slug) => {
+                        if (slug) f.append("artistSlugs", slug);
+                      },
+                    );
+                    if (it.imageUrl) f.append("imageUrl", it.imageUrl);
+                    if (it.previewImageUrl)
+                      f.append("previewImageUrl", it.previewImageUrl);
+                    if (it.youtubeUrl) f.append("youtubeUrl", it.youtubeUrl);
+                    if (it.instagramUrl)
+                      f.append("instagramUrl", it.instagramUrl);
+                    if (it.mediaType) f.append("mediaType", it.mediaType);
+                    if (it.description) f.append("description", it.description);
                     await addProject(f);
                     setRowsProjects((prev) => [it, ...prev]);
                   } else if (deletedPending.type === "artist") {

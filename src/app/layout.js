@@ -8,7 +8,7 @@ import ThemeProvider from "../components/ThemeProvider";
 export const metadata = {
   title: "Tales by VIVI | Creative Partner",
   description:
-    "Your creative partner for Animation & Imagery. Digital Artists. World-class. Nothing else.",
+    "Stories told through light, motion & texture. We are a creative studio specializing in animation, motion design, and visual storytelling. Based in Kolkata.",
   icons: {
     icon: "/favicon.ico",
   },

@@ -7,6 +7,7 @@ export default function ArtistSelect({
   defaultArtist = "",
   defaultSlug = "",
   onSelect = null,
+  includeHiddenFields = true,
 }) {
   const [options, setOptions] = useState([]);
   const [query, setQuery] = useState("");
@@ -144,8 +145,12 @@ export default function ArtistSelect({
         </div>
       )}
 
-      <input type="hidden" name="artist" value={selected} />
-      <input type="hidden" name="artistSlug" value={selectedSlug} />
+      {includeHiddenFields && (
+        <>
+          <input type="hidden" name="artist" value={selected} />
+          <input type="hidden" name="artistSlug" value={selectedSlug} />
+        </>
+      )}
     </div>
   );
 }

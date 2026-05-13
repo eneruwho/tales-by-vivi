@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ClientsMarquee from "../components/ClientsMarquee";
 import InstagramEmbed from "../components/InstagramEmbed";
+import { getProjectArtistLabel, getProjectArtistSlugs } from "../lib/projectArtists";
 import styles from "./page.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -167,8 +168,8 @@ export default function ClientPage({
     ? projects
         .filter(
           (p) =>
-            p.artistSlug === activeArtist.slug ||
-            (p.artist || "")
+            getProjectArtistSlugs(p).includes(activeArtist.slug) ||
+            getProjectArtistLabel(p)
               .toLowerCase()
               .includes(activeArtist.name.toLowerCase()),
         )
@@ -732,7 +733,7 @@ export default function ClientPage({
                       <span className={styles.reelLinkTitle}>{proj.title}</span>
                       <span className={styles.artistLabel}>
                         {"// "}
-                        {proj.artist}
+                        {getProjectArtistLabel(proj) || "Unknown artists"}
                       </span>
                     </Link>
                   </li>

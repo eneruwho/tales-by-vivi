@@ -14,6 +14,92 @@ function toDoc(data) {
   return data ? { id: data.id, ...data } : null;
 }
 
+function normalizeSlug(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^\w-]+/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function normalizeArtistSlugList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => {
+        if (item && typeof item === "object") {
+          return [item.slug || item.name].filter(Boolean);
+        }
+        return [item];
+      })
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const slug = value.trim();
+    return slug ? [slug] : [];
+  }
+
+  return [];
+}
+
+function sortProjectsByCreatedAtDesc(projects) {
+  return projects.sort((a, b) => {
+    const aTime = new Date(a.createdAt || 0).getTime();
+    const bTime = new Date(b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function projectMatchesArtist(project, artistSlug) {
+  const targetSlug = normalizeSlug(artistSlug);
+  if (!targetSlug) return false;
+
+  const projectSlugs = normalizeArtistSlugList(project.artistSlugs).map(
+    normalizeSlug,
+  );
+  return projectSlugs.includes(targetSlug);
+}
+
+async function getArtistsLookup() {
+  const artists = await getArtists();
+  return new Map(
+    artists.map((artist) => [normalizeSlug(artist.slug), artist]),
+  );
+}
+
+function enrichProjectWithArtists(project, artistsLookup) {
+  const artistSlugs = normalizeArtistSlugList(project.artistSlugs);
+  const artists = artistSlugs.map((slug) => {
+    const artist = artistsLookup.get(normalizeSlug(slug));
+    if (artist) {
+      return {
+        id: artist.id,
+        name: artist.name,
+        slug: artist.slug,
+      };
+    }
+    return {
+      name: slug,
+      slug,
+    };
+  });
+
+  return {
+    ...project,
+    artistSlugs,
+    artists,
+    artistNames: artists.map((artist) => artist.name).filter(Boolean),
+  };
+}
+
+function enrichProjectsWithArtists(projects, artistsLookup) {
+  return projects.map((project) => enrichProjectWithArtists(project, artistsLookup));
+}
+
 async function getNextIdFirestore(collection) {
   const q = await collection.orderBy("id", "desc").limit(1).get();
   if (q.empty) return 1;
@@ -25,11 +111,10 @@ export async function getProjects() {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
   const snap = await firestore.collections.projects.get();
   const projects = snap.docs.map((doc) => toDoc(doc.data()));
-  return projects.sort((a, b) => {
-    const aTime = new Date(a.createdAt || 0).getTime();
-    const bTime = new Date(b.createdAt || 0).getTime();
-    return bTime - aTime;
-  });
+  const artistsLookup = await getArtistsLookup();
+  return sortProjectsByCreatedAtDesc(
+    enrichProjectsWithArtists(projects, artistsLookup),
+  );
 }
 
 export async function getProjectBySlug(slug) {
@@ -39,7 +124,9 @@ export async function getProjectBySlug(slug) {
     .limit(1)
     .get();
   if (q.empty) return null;
-  return toDoc(q.docs[0].data());
+  const project = toDoc(q.docs[0].data());
+  const artistsLookup = await getArtistsLookup();
+  return enrichProjectWithArtists(project, artistsLookup);
 }
 
 export async function getArtists() {
@@ -63,10 +150,15 @@ export async function getArtistBySlug(slug) {
 
 export async function getProjectsByArtist(artistSlug) {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const snap = await firestore.collections.projects
-    .where("artistSlug", "==", artistSlug)
-    .get();
-  return snap.docs.map((doc) => toDoc(doc.data()));
+  const snap = await firestore.collections.projects.get();
+  const projects = snap.docs.map((doc) => toDoc(doc.data()));
+  const artistsLookup = await getArtistsLookup();
+  return sortProjectsByCreatedAtDesc(
+    enrichProjectsWithArtists(
+      projects.filter((project) => projectMatchesArtist(project, artistSlug)),
+      artistsLookup,
+    ),
+  );
 }
 
 export async function addProject(input) {
@@ -78,6 +170,7 @@ export async function addProject(input) {
   if (!q.empty) throw new Error(`Project slug already exists: ${input.slug}`);
 
   const nextId = await getNextIdFirestore(firestore.collections.projects);
+  const artistSlugs = normalizeArtistSlugList(input.artistSlugs);
 
   const project = {
     id: nextId,
@@ -97,12 +190,11 @@ export async function addProject(input) {
     instagramUrl: input.instagramUrl ?? null,
     mediaType: input.mediaType ?? null,
     description: input.description ?? null,
-    artist: input.artist,
-    artistSlug: input.artistSlug,
+    artistSlugs,
     createdAt: new Date().toISOString(),
   };
   await firestore.collections.projects.add(project);
-  return project;
+  return enrichProjectWithArtists(project, await getArtistsLookup());
 }
 
 export async function addArtist(input) {
@@ -183,6 +275,7 @@ export async function updateProject(id, input) {
 
   const docRef = q.docs[0].ref;
   const existing = q.docs[0].data();
+  const artistSlugs = normalizeArtistSlugList(input.artistSlugs);
 
   const slugQ = await firestore.collections.projects
     .where("slug", "==", input.slug)
@@ -192,8 +285,11 @@ export async function updateProject(id, input) {
     if (conflict) throw new Error(`Project slug already exists: ${input.slug}`);
   }
 
+  const existingWithoutLegacy = { ...existing };
+  delete existingWithoutLegacy.artist;
+  delete existingWithoutLegacy.artistSlug;
   const updated = {
-    ...existing,
+    ...existingWithoutLegacy,
     title: input.title,
     slug: input.slug,
     categories: Array.isArray(input.categories)
@@ -218,13 +314,12 @@ export async function updateProject(id, input) {
     instagramUrl: input.instagramUrl ?? existing.instagramUrl ?? null,
     mediaType: input.mediaType ?? existing?.mediaType ?? null,
     description: input.description ?? null,
-    artist: input.artist,
-    artistSlug: input.artistSlug,
+    artistSlugs,
     id: existing.id,
     createdAt: existing.createdAt,
   };
-  await docRef.update(updated);
-  return updated;
+  await docRef.set(updated);
+  return enrichProjectWithArtists(updated, await getArtistsLookup());
 }
 
 export async function deleteProject(id) {
@@ -234,9 +329,10 @@ export async function deleteProject(id) {
     .where("id", "==", numericId)
     .limit(1)
     .get();
-  if (q.empty) return false;
+  if (q.empty) return null;
+  const existing = q.docs[0].data();
   await q.docs[0].ref.delete();
-  return true;
+  return enrichProjectWithArtists(toDoc(existing), await getArtistsLookup());
 }
 
 export async function getSiteSettings() {

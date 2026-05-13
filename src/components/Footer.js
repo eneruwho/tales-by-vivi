@@ -12,7 +12,7 @@ const navLinks = [
 ];
 
 const socials = [
-  { name: "Instagram", url: "https://instagram.com" }
+  { name: "Instagram", url: "https://www.instagram.com/talesby.vivi/" }
 ];
 
 export default function Footer() {
@@ -62,8 +62,7 @@ export default function Footer() {
         <div className={styles.topRow}>
           <div className={styles.leftCol}>
             <motion.p className={styles.tagline} variants={itemVariants}>
-              Your creative partner
-              <br /> for Animation & Imagery.
+              Films, Motion & Visual Craft.
             </motion.p>
             {/* Newsletter */}
             <motion.div className={styles.newsletter} variants={itemVariants}>

@@ -69,6 +69,35 @@ function parseCommaSeparatedList(value) {
     .filter(Boolean);
 }
 
+function parseArtistSlugList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const slug = value.trim();
+    return slug ? [slug] : [];
+  }
+
+  return [];
+}
+
+function revalidateProjectArtistPaths(project) {
+  const artistSlugs = Array.isArray(project?.artistSlugs)
+    ? project.artistSlugs
+    : [];
+
+  revalidatePath("/");
+  revalidatePath("/projects");
+  revalidatePath("/artists");
+  if (project?.slug) {
+    revalidatePath(`/projects/${project.slug}`);
+  }
+  artistSlugs.forEach((slug) => {
+    if (slug) revalidatePath(`/artists/${slug}`);
+  });
+}
+
 async function uploadFiles(values, folder) {
   const files = values.filter(isUploadableFile);
   if (files.length === 0) return [];
@@ -114,13 +143,12 @@ export async function addProject(formData) {
     formData.get("artistRoles") || "",
   );
 
-  const artist = formData.get("artist");
-  if (!artist?.trim()) {
-    throw new Error("Please select an artist for this project");
+  const artistSlugs = parseArtistSlugList(formData.getAll("artistSlugs"));
+  if (artistSlugs.length === 0) {
+    throw new Error("Please select at least one artist for this project");
   }
 
   const slug = formData.get("slug") || slugify(title);
-  const artistSlug = formData.get("artistSlug") || slugify(artist);
 
   // Upload project images
   const uploadedImages = await uploadFiles(
@@ -181,11 +209,10 @@ export async function addProject(formData) {
     mediaType,
     previewImageUrl,
     description: formData.get("description") || null,
-    artist,
-    artistSlug,
+    artistSlugs,
   });
   revalidatePath("/admin");
-  revalidatePath("/");
+  revalidateProjectArtistPaths(created);
 
   return created;
 }
@@ -270,8 +297,10 @@ export async function deleteArtist(id) {
 export async function updateProject(id, formData) {
   const title = formData.get("title");
   const slug = formData.get("slug") || slugify(title);
-  const artist = formData.get("artist");
-  const artistSlug = formData.get("artistSlug") || slugify(artist);
+  const artistSlugs = parseArtistSlugList(formData.getAll("artistSlugs"));
+  if (artistSlugs.length === 0) {
+    throw new Error("Please select at least one artist for this project");
+  }
 
   const rawCategories = formData.get("categories") || "";
   const categories = parseCommaSeparatedList(rawCategories);
@@ -331,17 +360,22 @@ export async function updateProject(id, formData) {
     instagramUrl,
     mediaType,
     description: formData.get("description") || null,
-    artist,
-    artistSlug,
+    artistSlugs,
   });
 
   revalidatePath("/admin");
-  revalidatePath("/");
+  revalidateProjectArtistPaths({ slug, artistSlugs });
 }
 
 export async function deleteProject(id) {
-  await db.deleteProject(id);
+  const deleted = await db.deleteProject(id);
 
   revalidatePath("/admin");
-  revalidatePath("/");
+  if (deleted) {
+    revalidateProjectArtistPaths(deleted);
+  } else {
+    revalidatePath("/projects");
+    revalidatePath("/artists");
+    revalidatePath("/");
+  }
 }

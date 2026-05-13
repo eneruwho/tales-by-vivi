@@ -3,7 +3,9 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import gsap from "gsap";
 import styles from "./artists.module.css";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { getProjectArtistSlugs } from "../../lib/projectArtists";
 
 export default function ArtistsClient({ artists, projects }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -14,26 +16,8 @@ export default function ArtistsClient({ artists, projects }) {
   // Aggregate data so we know the artist and all their projects (memoized)
   const displayArtists = useMemo(() => {
     return artists.map((artist) => {
-      const nameLower = String(artist.name || "").toLowerCase();
       const artistProjects = projects.filter((p) => {
-        // match by slug
-        if (p.artistSlug && p.artistSlug === artist.slug) return true;
-        const artistField = p.artist || "";
-        // if stored as array of names
-        if (Array.isArray(artistField)) {
-          return artistField
-            .map((s) => String(s || "").toLowerCase())
-            .includes(nameLower);
-        }
-        // handle comma-separated names or simple contains check
-        const parts = String(artistField)
-          .split(",")
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean);
-        if (parts.includes(nameLower)) return true;
-        return String(artistField || "")
-          .toLowerCase()
-          .includes(nameLower);
+        return getProjectArtistSlugs(p).includes(artist.slug);
       });
       return {
         ...artist,
@@ -83,11 +67,6 @@ export default function ArtistsClient({ artists, projects }) {
     // Depend only on the active artist object reference
   }, [activeIndex, displayArtists]);
 
-  // Reset project index when artist changes
-  useEffect(() => {
-    setActiveProjectIdx(0);
-  }, [activeIndex]);
-
   const activeArtist = displayArtists[activeIndex] || displayArtists[0];
   const activeProject =
     activeArtist?.projects[activeProjectIdx] || activeArtist?.cover || null;
@@ -122,12 +101,14 @@ export default function ArtistsClient({ artists, projects }) {
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
           {activeArtist.cover && (
-            <img
+            <Image
               src={
                 activeArtist.cover.previewImageUrl ||
                 activeArtist.cover.imageUrl
               }
               alt=""
+              fill
+              sizes="100vw"
               className={styles.bgImage}
             />
           )}
@@ -144,7 +125,10 @@ export default function ArtistsClient({ artists, projects }) {
                 {activeIndex === i && <span className={styles.activeSquare} />}
                 <Link
                   href={`/artists/${artist.slug}`}
-                  onMouseEnter={() => setActiveIndex(i)}
+                  onMouseEnter={() => {
+                    setActiveIndex(i);
+                    setActiveProjectIdx(0);
+                  }}
                   className={`${styles.link} ${activeIndex === i ? styles.activeLink : ""}`}
                   data-cursor="hover"
                 >
@@ -187,11 +171,13 @@ export default function ArtistsClient({ artists, projects }) {
                     }
                   }}
                 >
-                  <img
+                  <Image
                     src={
                       activeProject.previewImageUrl || activeProject.imageUrl
                     }
                     alt={activeProject.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 45vw"
                     className={styles.media}
                   />
                   <div className={styles.projectNameOverlay}>

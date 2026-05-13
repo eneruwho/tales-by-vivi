@@ -56,15 +56,8 @@ export default function ProjectForm({ artists = [], onSaved }) {
         );
       }
 
-      // ensure mediaType is submitted
-      formData.set("mediaType", mediaType || "none");
-
-      // Add selected artists to formData
-      if (selectedArtists.length > 0) {
-        const artistNames = selectedArtists.map((a) => a.name).join(", ");
-        const artistSlugs = selectedArtists.map((a) => a.slug).join(", ");
-        formData.set("artist", artistNames);
-        formData.set("artistSlug", artistSlugs);
+      if (selectedArtists.length === 0) {
+        throw new Error("Please select at least one artist for this project");
       }
 
       // Upload preview image client-side and set previewImageUrl to ensure upload succeeds
@@ -97,6 +90,7 @@ export default function ProjectForm({ artists = [], onSaved }) {
         const form = formRef.current;
         if (form) form.reset();
         setSelectedArtists([]);
+        setPreviewSrc(null);
       }, 2000);
     } catch (err) {
       setError(err?.message || "Failed to add project");
@@ -210,14 +204,15 @@ export default function ProjectForm({ artists = [], onSaved }) {
               style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}
             >
               <div style={{ flex: 1 }}>
-                <ArtistSelect
-                  artists={artists}
-                  defaultArtist=""
-                  onSelect={(artist) => handleAddArtist(artist)}
-                />
-              </div>
-            </div>
-            {selectedArtists.length > 0 && (
+            <ArtistSelect
+              artists={artists}
+              defaultArtist=""
+              includeHiddenFields={false}
+              onSelect={(artist) => handleAddArtist(artist)}
+            />
+          </div>
+        </div>
+        {selectedArtists.length > 0 && (
               <div
                 style={{
                   display: "flex",
@@ -259,6 +254,14 @@ export default function ProjectForm({ artists = [], onSaved }) {
                 ))}
               </div>
             )}
+            {selectedArtists.map((artist) => (
+              <input
+                key={artist.slug}
+                type="hidden"
+                name="artistSlugs"
+                value={artist.slug}
+              />
+            ))}
           </div>
 
           <div className={styles.inputGroup}>

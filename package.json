@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "migrate:firestore": "node migrate_db.js",
+    "migrate:project-artists": "node scripts/migrate-project-artists.js",
     "seed:admin": "node scripts/seed-admin.js"
   },
   "dependencies": {

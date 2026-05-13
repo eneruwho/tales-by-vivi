@@ -4,11 +4,19 @@ import gsap from "gsap";
 import styles from "./artistDetail.module.css";
 import Link from "next/link";
 import Image from "next/image";
+import { getProjectArtistEntries } from "../../../lib/projectArtists";
 export default function ArtistProfileClient({ artist, projects }) {
   const heroRef = useRef(null);
   const gridRef = useRef(null);
   const placeholderImage =
     'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000"><rect width="100%" height="100%" fill="%23111"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="%23aaa" dominant-baseline="middle" text-anchor="middle">No profile image</text></svg>';
+
+  function getProjectMediaType(project) {
+    if (project?.mediaType) return project.mediaType;
+    if (project?.instagramUrl) return "instagram";
+    if (project?.youtubeUrl || project?.videoUrl) return "youtube";
+    return null;
+  }
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -111,33 +119,110 @@ export default function ArtistProfileClient({ artist, projects }) {
 
       <section className={styles.projects}>
         <div className={styles.grid} ref={gridRef}>
-          {projects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.slug}`}
-              className={styles.card}
-              data-cursor="hover"
-            >
-              <div className={styles.mediaWrapper}>
-                <Image
-                  src={project.previewImageUrl || project.imageUrl || ""}
-                  alt={project.title}
-                  className={styles.image}
-                  width={1600}
-                  height={900}
-                  unoptimized
-                />
-              </div>
-              <div className={styles.info}>
-                <h3>{project.title}</h3>
-                <span>
-                  {Array.isArray(project.categories)
-                    ? project.categories.join(", ")
-                    : project.category || ""}
-                </span>
-              </div>
-            </Link>
-          ))}
+          {projects.map((project) => {
+            const mediaType = getProjectMediaType(project);
+            const hasImage = Boolean(
+              project.previewImageUrl || project.imageUrl,
+            );
+            const isInstagramOnly = Boolean(mediaType === "instagram" && !hasImage);
+            const linkHref = isInstagramOnly
+              ? project.instagramUrl
+              : `/projects/${project.slug}`;
+            const external = isInstagramOnly;
+            const projectArtists = getProjectArtistEntries(project);
+
+            return (
+              <Link
+                key={project.id}
+                href={linkHref}
+                className={styles.card}
+                data-cursor="hover"
+                {...(external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+              >
+                <div className={styles.mediaWrapper}>
+                  {hasImage ? (
+                    <Image
+                      src={project.previewImageUrl || project.imageUrl}
+                      alt={project.title}
+                      className={styles.image}
+                      width={1600}
+                      height={900}
+                      unoptimized
+                    />
+                  ) : isInstagramOnly ? (
+                    <div className={styles.instagramPlaceholder} aria-hidden>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "0.75rem",
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          width="48"
+                          height="48"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="2"
+                            y="2"
+                            width="20"
+                            height="20"
+                            rx="5"
+                            ry="5"
+                          />
+                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                          <line x1="17.5" y1="6.5" x2="17.5" y2="6.5" />
+                        </svg>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                          }}
+                        >
+                          Instagram Post
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.noImagePlaceholder} aria-hidden>
+                      <span>No image</span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.info}>
+                  <h3>{project.title}</h3>
+                  {projectArtists.length > 1 && (
+                    <div className={styles.coArtistRow}>
+                      {projectArtists.map((artist) => (
+                        <span
+                          key={artist.slug}
+                          className={styles.coArtistText}
+                        >
+                          {artist.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <span>
+                    {Array.isArray(project.categories)
+                      ? project.categories.join(", ")
+                      : project.category || ""}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>

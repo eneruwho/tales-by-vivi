@@ -22,6 +22,32 @@ function parseCommaSeparatedList(value) {
     .filter(Boolean);
 }
 
+function parseArtistSlugList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const slug = value.trim();
+    return slug ? [slug] : [];
+  }
+
+  return [];
+}
+
+function revalidateProjectPaths(project) {
+  revalidatePath("/projects");
+  revalidatePath("/artists");
+  if (project?.slug) {
+    revalidatePath(`/projects/${project.slug}`);
+  }
+  (Array.isArray(project?.artistSlugs) ? project.artistSlugs : []).forEach(
+    (slug) => {
+      if (slug) revalidatePath(`/artists/${slug}`);
+    },
+  );
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -31,8 +57,13 @@ export async function POST(req) {
 
     const title = body.title;
     const slug = body.slug || slugify(title);
-    const artist = body.artist || "";
-    const artistSlug = body.artistSlug || slugify(artist);
+    const artistSlugs = parseArtistSlugList(body.artistSlugs);
+    if (artistSlugs.length === 0) {
+      return NextResponse.json(
+        { error: "Please select at least one artist for this project" },
+        { status: 400 },
+      );
+    }
 
     const project = await db.addProject({
       title,
@@ -44,19 +75,20 @@ export async function POST(req) {
       artistRoles: parseCommaSeparatedList(body.artistRoles || ""),
       imageUrl: body.imageUrl || null,
       imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [],
+      previewImageUrl: body.previewImageUrl || null,
       videoUrl: body.videoUrl || null,
       videoUrls: Array.isArray(body.videoUrls) ? body.videoUrls : [],
+      youtubeUrl: body.youtubeUrl || null,
+      instagramUrl: body.instagramUrl || null,
+      mediaType: body.mediaType || null,
       description: body.description || null,
-      artist,
-      artistSlug,
+      artistSlugs,
     });
 
     try {
       revalidatePath("/");
-      revalidatePath("/projects");
-      revalidatePath(`/projects/${project.slug}`);
+      revalidateProjectPaths(project);
       revalidatePath("/admin");
-      if (project.artistSlug) revalidatePath(`/artists/${project.artistSlug}`);
     } catch (e) {
       // ignore revalidation errors
     }

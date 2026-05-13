@@ -1,6 +1,8 @@
 import { getProjects } from "../actions";
 import CategoriesClient from "./CategoriesClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function CategoriesPage() {
   const projects = await getProjects();
 
