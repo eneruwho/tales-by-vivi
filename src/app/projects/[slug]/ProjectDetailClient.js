@@ -9,6 +9,7 @@ import InstagramEmbed from "../../../components/InstagramEmbed";
 import {
   getProjectArtistEntries,
   getProjectArtistLabel,
+  getProjectArtistRoleSummary,
 } from "../../../lib/projectArtists";
 
 function buildGallery(project) {
@@ -46,9 +47,7 @@ export default function ProjectDetailClient({ project }) {
   const subcategories = Array.isArray(project.subcategories)
     ? project.subcategories
     : [];
-  const artistRoles = Array.isArray(project.artistRoles)
-    ? project.artistRoles
-    : [];
+  const artistRoles = getProjectArtistRoleSummary(project);
   const mediaType =
     project.mediaType || (project.instagramUrl ? "instagram" : "youtube");
   // Normalize various YouTube URL formats into an embed URL

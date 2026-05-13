@@ -5,6 +5,7 @@ import {
   normalizeClientLogoItems,
 } from "./clientLogos.js";
 import { listFolderResources, destroyByPublicId } from "./cloudinary.js";
+import { normalizeProjectArtistRoles } from "./projectArtists.js";
 
 function isFirestoreReady() {
   return Boolean(firestore && firestore.db && firestore.collections);
@@ -180,7 +181,7 @@ export async function addProject(input) {
     subcategories: Array.isArray(input.subcategories)
       ? input.subcategories
       : [],
-    artistRoles: Array.isArray(input.artistRoles) ? input.artistRoles : [],
+    artistRoles: normalizeProjectArtistRoles(input.artistRoles),
     imageUrl: input.imageUrl ?? null,
     imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
     previewImageUrl: input.previewImageUrl ?? null,
@@ -298,9 +299,9 @@ export async function updateProject(id, input) {
     subcategories: Array.isArray(input.subcategories)
       ? input.subcategories
       : existing.subcategories || [],
-    artistRoles: Array.isArray(input.artistRoles)
-      ? input.artistRoles
-      : existing.artistRoles || [],
+    artistRoles: normalizeProjectArtistRoles(
+      input.artistRoles ?? existing.artistRoles ?? [],
+    ),
     imageUrl: input.imageUrl ?? null,
     imageUrls: Array.isArray(input.imageUrls)
       ? input.imageUrls

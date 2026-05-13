@@ -71,7 +71,7 @@ export default function Header() {
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Artists", path: "/artists" },
-    { name: "Categories", path: "/categories" },
+    { name: "Categories", path: "/projects" },
     { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];
@@ -119,6 +119,7 @@ export default function Header() {
             className={styles.logoImg}
             width={120}
             height={60}
+            loading="eager"
           />
         </Link>
         <div className={styles.headerRight}>

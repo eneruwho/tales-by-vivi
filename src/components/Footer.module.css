@@ -261,7 +261,7 @@
 
 .bigLogoChar {
   display: inline-block;
-  animation: none;
+  animation: footerCharFloat 6s ease-in-out infinite;
 }
 
 /* Fill-on-hover + morph effect */

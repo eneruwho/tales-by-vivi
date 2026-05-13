@@ -3,6 +3,7 @@
 import * as db from "../lib/db";
 import { revalidatePath } from "next/cache";
 import { uploadBuffer } from "../lib/cloudinary";
+import { normalizeProjectArtistRoles } from "../lib/projectArtists";
 
 export async function getProjects() {
   return db.getProjects();
@@ -139,8 +140,8 @@ export async function addProject(formData) {
     throw new Error("At least one category is required");
   }
 
-  const artistRoles = parseCommaSeparatedList(
-    formData.get("artistRoles") || "",
+  const artistRoles = normalizeProjectArtistRoles(
+    formData.get("artistRoles") || [],
   );
 
   const artistSlugs = parseArtistSlugList(formData.getAll("artistSlugs"));
@@ -249,18 +250,12 @@ export async function updateShowreel(formData) {
     ? showreelUrl.trim()
     : null;
 
-  const showreelTitle = formData.get("showreelTitle");
-  const resolvedShowreelTitle = hasNonEmptyString(showreelTitle)
-    ? showreelTitle.trim()
-    : null;
-
   if (!resolvedShowreelUrl) {
     throw new Error("Please provide a showreel URL");
   }
 
   await db.setSiteSettings({
     showreelUrl: resolvedShowreelUrl,
-    showreelTitle: resolvedShowreelTitle,
   });
   revalidatePath("/");
   revalidatePath("/admin");
@@ -307,8 +302,8 @@ export async function updateProject(id, formData) {
   const subcategories = parseCommaSeparatedList(
     formData.get("subcategories") || "",
   );
-  const artistRoles = parseCommaSeparatedList(
-    formData.get("artistRoles") || "",
+  const artistRoles = normalizeProjectArtistRoles(
+    formData.get("artistRoles") || [],
   );
 
   const uploadedImages = await uploadFiles(

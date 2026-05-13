@@ -12,9 +12,25 @@ export default function ProjectForm({ artists = [], onSaved }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [selectedArtists, setSelectedArtists] = useState([]); // Array of { name, slug }
+  const [selectedArtists, setSelectedArtists] = useState([]); // Array of { name, slug, rolesText }
   const [mediaType, setMediaType] = useState("youtube");
   const [previewSrc, setPreviewSrc] = useState(null);
+
+  function serializeArtistRoles(items) {
+    return items
+      .map((artist) => {
+        const roles = String(artist.rolesText || "")
+          .split(",")
+          .map((role) => role.trim())
+          .filter(Boolean);
+        return {
+          slug: artist.slug,
+          name: artist.name,
+          roles,
+        };
+      })
+      .filter((item) => item.slug || item.name || item.roles.length > 0);
+  }
 
   async function handleSubmit(formData) {
     setError(null);
@@ -59,6 +75,8 @@ export default function ProjectForm({ artists = [], onSaved }) {
       if (selectedArtists.length === 0) {
         throw new Error("Please select at least one artist for this project");
       }
+
+      formData.set("artistRoles", JSON.stringify(serializeArtistRoles(selectedArtists)));
 
       // Upload preview image client-side and set previewImageUrl to ensure upload succeeds
       if (previewFile && previewFile.size > 0) {
@@ -112,12 +130,23 @@ export default function ProjectForm({ artists = [], onSaved }) {
 
   function handleAddArtist(artist) {
     if (!selectedArtists.find((a) => a.slug === artist.slug)) {
-      setSelectedArtists([...selectedArtists, artist]);
+      setSelectedArtists([
+        ...selectedArtists,
+        { name: artist.name, slug: artist.slug, rolesText: "" },
+      ]);
     }
   }
 
   function handleRemoveArtist(slug) {
     setSelectedArtists(selectedArtists.filter((a) => a.slug !== slug));
+  }
+
+  function handleArtistRolesChange(slug, value) {
+    setSelectedArtists((prev) =>
+      prev.map((artist) =>
+        artist.slug === slug ? { ...artist, rolesText: value } : artist,
+      ),
+    );
   }
 
   return (
@@ -204,15 +233,15 @@ export default function ProjectForm({ artists = [], onSaved }) {
               style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}
             >
               <div style={{ flex: 1 }}>
-            <ArtistSelect
-              artists={artists}
-              defaultArtist=""
-              includeHiddenFields={false}
-              onSelect={(artist) => handleAddArtist(artist)}
-            />
-          </div>
-        </div>
-        {selectedArtists.length > 0 && (
+                <ArtistSelect
+                  artists={artists}
+                  defaultArtist=""
+                  includeHiddenFields={false}
+                  onSelect={(artist) => handleAddArtist(artist)}
+                />
+              </div>
+            </div>
+            {selectedArtists.length > 0 && (
               <div
                 style={{
                   display: "flex",
@@ -226,30 +255,50 @@ export default function ProjectForm({ artists = [], onSaved }) {
                     key={artist.slug}
                     style={{
                       display: "flex",
-                      alignItems: "center",
+                      flexDirection: "column",
                       gap: "0.5rem",
-                      padding: "0.5rem 0.75rem",
+                      padding: "0.75rem",
                       backgroundColor: "#e0e0e0",
                       borderRadius: "4px",
                       fontSize: "0.875rem",
                       color: "#000",
+                      minWidth: "100%",
                     }}
                   >
-                    <span>{artist.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveArtist(artist.slug)}
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0",
-                        fontSize: "1rem",
-                        color: "#666",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "0.75rem",
                       }}
                     >
-                      ×
-                    </button>
+                      <span>{artist.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveArtist(artist.slug)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0",
+                          fontSize: "1rem",
+                          color: "#666",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={artist.rolesText}
+                      onChange={(e) =>
+                        handleArtistRolesChange(artist.slug, e.target.value)
+                      }
+                      placeholder="Type role(s), comma-separated"
+                      className={styles.input}
+                      disabled={loading}
+                    />
                   </div>
                 ))}
               </div>
@@ -299,17 +348,6 @@ export default function ProjectForm({ artists = [], onSaved }) {
               type="url"
               name="imageUrl"
               placeholder="https://..."
-              className={styles.input}
-              disabled={loading}
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Artist Roles (comma-separated)</label>
-            <input
-              type="text"
-              name="artistRoles"
-              placeholder="e.g. Direction, Animation, Compositing"
               className={styles.input}
               disabled={loading}
             />

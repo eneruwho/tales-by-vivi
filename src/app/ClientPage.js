@@ -8,7 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ClientsMarquee from "../components/ClientsMarquee";
 import InstagramEmbed from "../components/InstagramEmbed";
-import { getProjectArtistLabel, getProjectArtistSlugs } from "../lib/projectArtists";
+import { getProjectArtistLabel } from "../lib/projectArtists";
 import styles from "./page.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -93,7 +93,7 @@ function CategoryRow({ name, count, img }) {
 
   return (
     <Link
-      href={`/categories?filter=${encodeURIComponent(name)}`}
+      href={`/projects?category=${encodeURIComponent(name)}`}
       className={styles.catRow}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -138,7 +138,6 @@ export default function ClientPage({
   projects,
   artists = [],
   showreelUrl = null,
-  showreelTitle = null,
   clientLogos = [],
 }) {
   const familyRef = useRef(null);
@@ -149,7 +148,6 @@ export default function ClientPage({
   const heroWheelLockRef = useRef(false);
   const lastFamilyIdxRef = useRef(-1);
   const [activeFamilyIdx, setActiveFamilyIdx] = useState(0);
-  const [activeFamilyProjectIdx, setActiveFamilyProjectIdx] = useState(0);
   const [activeReelIdx, setActiveReelIdx] = useState(0);
   const [showreelCopyStep, setShowreelCopyStep] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -164,26 +162,6 @@ export default function ClientPage({
     activeProject?.mediaType ||
     (activeProject?.instagramUrl ? "instagram" : null);
   const activeArtist = familyArtists[activeFamilyIdx] || null;
-  const activeArtistProjects = activeArtist
-    ? projects
-        .filter(
-          (p) =>
-            getProjectArtistSlugs(p).includes(activeArtist.slug) ||
-            getProjectArtistLabel(p)
-              .toLowerCase()
-              .includes(activeArtist.name.toLowerCase()),
-        )
-        .slice(0, 6)
-    : [];
-
-  // Ensure project index is within bounds when artist changes
-  const safeFamilyProjectIdx =
-    activeFamilyProjectIdx >= activeArtistProjects.length
-      ? 0
-      : activeFamilyProjectIdx;
-
-  const activeFamilyProject =
-    activeArtistProjects[safeFamilyProjectIdx] || null;
   const trailImages = projects
     .filter((project) => Boolean(project.imageUrl))
     .slice(0, 8)
@@ -495,6 +473,7 @@ export default function ClientPage({
                       width={1200}
                       height={260}
                       unoptimized
+                      style={{ height: "auto" }}
                     />
                   </motion.div>
                 ) : (
@@ -513,13 +492,15 @@ export default function ClientPage({
                       width={1200}
                       height={220}
                       unoptimized
+                      style={{ height: "auto" }}
                     />
                     <Link
                       href="/artists"
                       className={styles.showreelCopyCta}
                       data-cursor="hover"
+                      prefetch
                     >
-                      Explore our works
+                      Explore our work
                       <span className={styles.heroBtnSquare} />
                     </Link>
                   </motion.div>
@@ -531,7 +512,7 @@ export default function ClientPage({
               <div>
                 <div className={styles.showreelTitle}>Showreel</div>
                 <div className={styles.showreelDates}>
-                  {showreelTitle || activeProject?.title || "Tales by VIVI"}
+                  {new Date().getFullYear()}
                 </div>
               </div>
             </div>
@@ -562,11 +543,11 @@ export default function ClientPage({
             <div className={styles.categoriesHead}>
               <h2 className={styles.categoriesTitle}>Categories</h2>
               <Link
-                href="/categories"
+                href="/projects"
                 className={styles.categoriesViewAll}
                 data-cursor="hover"
               >
-                Explore All
+                View All Categories →
               </Link>
             </div>
             <div className={styles.categoriesList}>
@@ -578,16 +559,6 @@ export default function ClientPage({
                   img={categoryImages[name] || FALLBACK_IMAGE}
                 />
               ))}
-            </div>
-            <div className={styles.categoriesButton}>
-              <Link
-                href="/categories"
-                className={styles.categoriesAllBtn}
-                data-cursor="hover"
-              >
-                All Categories
-                <span className={styles.heroBtnSquare} />
-              </Link>
             </div>
           </div>
         </section>
@@ -607,9 +578,9 @@ export default function ClientPage({
               {/* Left: media preview */}
               <div className={styles.familyMedia}>
                 <AnimatePresence mode="wait">
-                  {activeArtist && activeFamilyProject && (
+                  {activeArtist && (
                     <motion.div
-                      key={`${activeArtist.slug}-${activeFamilyProject.id}`}
+                      key={activeArtist.slug}
                       className={styles.familyMediaInner}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -618,18 +589,18 @@ export default function ClientPage({
                     >
                       <Image
                         src={
-                          activeFamilyProject.previewImageUrl ||
-                          activeFamilyProject.imageUrl ||
+                          activeArtist.imageUrl ||
+                          activeArtist.previewImageUrl ||
                           FALLBACK_IMAGE
                         }
-                        alt={activeFamilyProject.title}
+                        alt={activeArtist.name}
                         className={styles.familyMediaImg}
                         fill
                         unoptimized
                       />
                       <div className={styles.familyMediaOverlay}>
                         <div className={styles.familyMediaTitle}>
-                          {activeFamilyProject.title}
+                          {activeArtist.name}
                         </div>
                       </div>
                     </motion.div>
@@ -662,33 +633,6 @@ export default function ClientPage({
                     </Link>
                   </div>
                 ))}
-                <div className={styles.familyWorkPreview}>
-                  <div className={styles.familyWorkTitle}>Selected Works</div>
-                  <div className={styles.familyWorkList}>
-                    {activeArtistProjects.length > 0 ? (
-                      activeArtistProjects.map((project, idx) => (
-                        <Link
-                          key={project.id}
-                          href={`/projects/${project.slug}`}
-                          className={`${styles.familyWorkItem} ${
-                            safeFamilyProjectIdx === idx
-                              ? styles.familyWorkItemActive
-                              : ""
-                          }`}
-                          onMouseEnter={() => setActiveFamilyProjectIdx(idx)}
-                          data-cursor="hover"
-                        >
-                          <span>{project.title}</span>
-                          <span className={styles.familyWorkArrow}>→</span>
-                        </Link>
-                      ))
-                    ) : (
-                      <p className={styles.familyWorkEmpty}>
-                        No projects yet for this artist.
-                      </p>
-                    )}
-                  </div>
-                </div>
                 <Link
                   href="/artists"
                   className={styles.familyViewAll}

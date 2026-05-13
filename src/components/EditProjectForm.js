@@ -5,7 +5,9 @@ import styles from "../app/admin/admin.module.css";
 import ArtistSelect from "./ArtistSelect";
 import Loader from "./Loader";
 import Toast from "./Toast";
-import { buildProjectArtistSelections } from "../lib/projectArtists";
+import {
+  buildProjectArtistSelections,
+} from "../lib/projectArtists";
 
 export default function EditProjectForm({ project, artists = [], onSaved }) {
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,22 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
     if (Array.isArray(value)) return value.join(", ");
     if (typeof value === "string") return value;
     return "";
+  }
+
+  function serializeArtistRoles(items) {
+    return items
+      .map((artist) => {
+        const roles = String(artist.rolesText || "")
+          .split(",")
+          .map((role) => role.trim())
+          .filter(Boolean);
+        return {
+          slug: artist.slug,
+          name: artist.name,
+          roles,
+        };
+      })
+      .filter((item) => item.slug || item.name || item.roles.length > 0);
   }
 
   async function handleSubmit(e) {
@@ -59,7 +77,7 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
         title: form.title.value,
         slug: form.slug.value,
         categories: form.categories.value,
-        artistRoles: form.artistRoles.value,
+        artistRoles: JSON.stringify(serializeArtistRoles(selectedArtists)),
         imageUrl: form.imageUrl.value,
         previewImageUrl,
         youtubeUrl: form.youtubeUrl?.value || null,
@@ -123,12 +141,23 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
 
   function handleAddArtist(artist) {
     if (!selectedArtists.find((a) => a.slug === artist.slug)) {
-      setSelectedArtists([...selectedArtists, artist]);
+      setSelectedArtists([
+        ...selectedArtists,
+        { name: artist.name, slug: artist.slug, rolesText: "" },
+      ]);
     }
   }
 
   function handleRemoveArtist(slug) {
     setSelectedArtists(selectedArtists.filter((a) => a.slug !== slug));
+  }
+
+  function handleArtistRolesChange(slug, value) {
+    setSelectedArtists((prev) =>
+      prev.map((artist) =>
+        artist.slug === slug ? { ...artist, rolesText: value } : artist,
+      ),
+    );
   }
 
   return (
@@ -245,45 +274,54 @@ export default function EditProjectForm({ project, artists = [], onSaved }) {
                     key={artist.slug}
                     style={{
                       display: "flex",
-                      alignItems: "center",
+                      flexDirection: "column",
                       gap: "0.5rem",
-                      padding: "0.5rem 0.75rem",
+                      padding: "0.75rem",
                       backgroundColor: "#e0e0e0",
                       borderRadius: "4px",
                       fontSize: "0.875rem",
                       color: "#000",
+                      minWidth: "100%",
                     }}
                   >
-                    <span>{artist.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveArtist(artist.slug)}
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "0",
-                        fontSize: "1rem",
-                        color: "#666",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "0.75rem",
                       }}
                     >
-                      ×
-                    </button>
+                      <span>{artist.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveArtist(artist.slug)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0",
+                          fontSize: "1rem",
+                          color: "#666",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={artist.rolesText || ""}
+                      onChange={(e) =>
+                        handleArtistRolesChange(artist.slug, e.target.value)
+                      }
+                      placeholder="Type role(s), comma-separated"
+                      className={styles.input}
+                      disabled={loading}
+                    />
                   </div>
                 ))}
               </div>
             )}
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Artist Roles (comma-separated)</label>
-            <input
-              type="text"
-              name="artistRoles"
-              defaultValue={formatCommaSeparatedValue(project.artistRoles)}
-              className={styles.input}
-              disabled={loading}
-            />
           </div>
 
           <div className={styles.inputGroup}>

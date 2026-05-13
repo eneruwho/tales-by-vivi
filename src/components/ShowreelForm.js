@@ -38,10 +38,6 @@ export default function ShowreelForm() {
   async function handleSubmit(formData) {
     setError(null);
     setSuccess(null);
-    const showreelTitle = formData.get("showreelTitle");
-    const hasShowreelTitle =
-      typeof showreelTitle === "string" && showreelTitle.trim().length > 0;
-
     const showreelUrl = formData.get("showreelUrl");
     const hasShowreelUrl =
       typeof showreelUrl === "string" && showreelUrl.trim().length > 0;
@@ -57,12 +53,8 @@ export default function ShowreelForm() {
       return;
     }
 
-    // If user is uploading a video file, require a title and validate file type
+    // If user is uploading a video file, validate file type
     if (hasShowreelVideo) {
-      if (!hasShowreelTitle) {
-        setError("Please provide a showreel title when uploading a video.");
-        return;
-      }
       const type = showreelVideo.type || "";
       if (!type.startsWith("video/")) {
         setError("Uploaded file must be a video file.");
@@ -98,7 +90,7 @@ export default function ShowreelForm() {
         style={{ position: "relative" }}
         aria-busy={loading}
       >
-        <h2>Showreel</h2>
+        <h2>Update Showreel</h2>
         {error && (
           <div
             style={{
@@ -132,16 +124,6 @@ export default function ShowreelForm() {
         )}
         <form action={handleSubmit} ref={formRef}>
           <div className={styles.inputGroup}>
-            <label>Showreel Title (optional)</label>
-            <input
-              type="text"
-              name="showreelTitle"
-              placeholder="e.g. Tales by VIVI — 2026"
-              className={styles.input}
-              disabled={loading}
-            />
-          </div>
-          <div className={styles.inputGroup}>
             <label>Showreel URL</label>
             <input
               type="url"
@@ -167,7 +149,7 @@ export default function ShowreelForm() {
             disabled={loading}
             aria-disabled={loading}
           >
-            {loading ? "Saving..." : "Save Showreel"}
+            {loading ? "Updating..." : "Update Showreel"}
           </button>
         </form>
       </div>

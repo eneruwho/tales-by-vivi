@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import * as db from "../../../../src/lib/db";
 import { revalidatePath } from "next/cache";
+import { normalizeProjectArtistRoles } from "../../../../src/lib/projectArtists";
 
 function slugify(text) {
   return String(text || "")
@@ -72,7 +73,7 @@ export async function POST(req) {
         body.categories || body.category || "",
       ),
       subcategories: parseCommaSeparatedList(body.subcategories || ""),
-      artistRoles: parseCommaSeparatedList(body.artistRoles || ""),
+      artistRoles: normalizeProjectArtistRoles(body.artistRoles || []),
       imageUrl: body.imageUrl || null,
       imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [],
       previewImageUrl: body.previewImageUrl || null,

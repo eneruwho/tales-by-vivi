@@ -72,79 +72,30 @@
   color: var(--muted);
 }
 
-.spinSection {
-  margin-top: 3rem;
-  border-top: 1px solid var(--border);
-  padding-top: 2.5rem;
+.socialRow {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
-.spinHead {
-  display: flex;
+.socialIconLink {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.spinHead h3 {
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw, 2.8rem);
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-}
-
-.spinBtn {
-  border: 1px solid var(--border);
-  background: transparent;
+  justify-content: center;
   color: var(--fg);
-  padding: 0.55rem 1rem;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.65rem;
-  cursor: pointer;
+  text-decoration: none;
 }
 
-.wheelWrap {
-  display: grid;
-  place-items: center;
-  min-height: 360px;
+.socialIcon {
+  width: 2rem;
+  height: 2rem;
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
-.wheel {
-  position: relative;
-  width: 22rem;
-  height: 22rem;
-  border: 1px dashed var(--border);
-  border-radius: 50%;
-}
-
-.wheelCard {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 11.2rem;
-  transform-origin: center 10.8rem;
-  margin-left: -5.6rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  text-align: left;
-}
-
-.wheelCard strong {
-  font-family: var(--font-sans);
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-}
-
-.wheelCard span {
-  font-size: 0.72rem;
-  color: var(--muted);
+.socialIconLink:hover .socialIcon {
+  transform: scale(1.05);
+  opacity: 0.75;
 }
 
 @media (max-width: 768px) {
@@ -159,23 +110,6 @@
   .grid {
     gap: 2rem;
     padding-top: 2.5rem;
-  }
-
-  .wheel {
-    width: 18rem;
-    height: 18rem;
-  }
-
-  .wheelCard {
-    width: 8.8rem;
-    margin-left: -4.4rem;
-    transform-origin: center 8.5rem;
-  }
-
-  .spinHead {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
   }
 }
 
@@ -201,26 +135,5 @@
 
   .grid p {
     font-size: 1rem;
-  }
-
-  .wheel {
-    width: 16rem;
-    height: 16rem;
-  }
-
-  .wheelCard {
-    width: 7.5rem;
-    margin-left: -3.75rem;
-    transform-origin: center 7.2rem;
-    padding: 0.65rem;
-  }
-
-  .wheelCard strong,
-  .wheelCard span {
-    font-size: 0.65rem;
-  }
-
-  .spinHead h3 {
-    font-size: clamp(1.2rem, 5vw, 1.8rem);
   }
 }

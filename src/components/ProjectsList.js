@@ -3,7 +3,10 @@ import { useState } from "react";
 import { deleteProject } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import Toast from "./Toast";
-import { getProjectArtistLabel } from "../lib/projectArtists";
+import {
+  getProjectArtistLabel,
+  getProjectArtistRoleSummary,
+} from "../lib/projectArtists";
 
 export default function ProjectsList({ initialProjects = [] }) {
   const [projects, setProjects] = useState(initialProjects);
@@ -49,7 +52,8 @@ export default function ProjectsList({ initialProjects = [] }) {
                 {Array.isArray(project.artistRoles) &&
                   project.artistRoles.length > 0 && (
                     <p style={{ fontSize: "0.8rem", marginTop: "0.35rem" }}>
-                      Artist Roles: {project.artistRoles.join(", ")}
+                      Artist Roles:{" "}
+                      {getProjectArtistRoleSummary(project).join(" | ")}
                     </p>
                   )}
                 {project.videoUrl && (

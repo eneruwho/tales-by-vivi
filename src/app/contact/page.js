@@ -2,24 +2,8 @@
 import styles from "./contact.module.css";
 import SplitTextReveal from "../../components/SplitTextReveal";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
 
 export default function ContactPage() {
-  const [spin, setSpin] = useState(0);
-  const cities = useMemo(
-    () => [
-      { name: "Paris", line1: "14, rue Yvonne le Tac", line2: "75018 - Paris" },
-      { name: "London", line1: "50 Tavistock Road", line2: "W11 1AW - London" },
-      {
-        name: "Austin",
-        line1: "208 Barton Springs Rd",
-        line2: "TX 78704 - Austin",
-      },
-      { name: "Kolkata", line1: "Park Street", line2: "West Bengal - Kolkata" },
-    ],
-    [],
-  );
-
   return (
     <main className={styles.main}>
       <div className={styles.container}>
@@ -53,93 +37,42 @@ export default function ContactPage() {
         </div>
 
         <motion.div
-          className={styles.grid}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 1 }}
-        >
-          <div>
-            <h3>Paris</h3>
-            <p>
-              14, rue Yvonne le Tac
-              <br />
-              75018 - Paris
-            </p>
-          </div>
-          <div>
-            <h3>London</h3>
-            <p>
-              50 Tavistock Road
-              <br />
-              W11 1AW - London
-            </p>
-          </div>
-          <div>
-            <h3>Social</h3>
-            <p>
-              <a
-                href="https://www.instagram.com/talesby.vivi/"
-                target="_blank"
-                rel="noreferrer"
-                data-cursor="hover"
-              >
-                Instagram
-              </a>
-              <br />
-              <a
-                href="https://www.linkedin.com/"
-                target="_blank"
-                rel="noreferrer"
-                data-cursor="hover"
-              >
-                LinkedIn
-              </a>
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.section
-          className={styles.spinSection}
-          initial={{ opacity: 0, y: 30 }}
+          className={styles.socialRow}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.8 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <div className={styles.spinHead}>
-            <h3>Spin &amp; See</h3>
-            <button
-              type="button"
-              className={styles.spinBtn}
-              onClick={() => setSpin((s) => s + 90)}
+          <a
+            href="https://www.instagram.com/talesby.vivi/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.socialIconLink}
+            aria-label="Instagram"
+            data-cursor="hover"
+          >
+            <svg
+              className={styles.socialIcon}
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              Rotate
-            </button>
-          </div>
-          <div className={styles.wheelWrap}>
-            <motion.div
-              className={styles.wheel}
-              animate={{ rotate: spin }}
-              transition={{ type: "spring", stiffness: 80, damping: 18 }}
-            >
-              {cities.map((city, i) => {
-                const angle = i * (360 / cities.length);
-                return (
-                  <div
-                    key={city.name}
-                    className={styles.wheelCard}
-                    style={{
-                      transform: `rotate(${angle}deg) translateY(-10.8rem) rotate(${-angle}deg)`,
-                    }}
-                  >
-                    <strong>{city.name}</strong>
-                    <span>{city.line1}</span>
-                    <span>{city.line2}</span>
-                  </div>
-                );
-              })}
-            </motion.div>
-          </div>
-        </motion.section>
+              <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+              <circle cx="12" cy="12" r="3.5" />
+              <circle
+                cx="17.2"
+                cy="6.8"
+                r="0.9"
+                fill="currentColor"
+                stroke="none"
+              />
+            </svg>
+          </a>
+        </motion.div>
       </div>
     </main>
   );

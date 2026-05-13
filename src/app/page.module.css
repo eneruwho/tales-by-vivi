@@ -1262,11 +1262,15 @@
 
 .reelMediaInnerInstagram {
   width: 100%;
+  aspect-ratio: 16 / 9;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: visible;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
 }
 
 .reelMediaImageWrap {
@@ -1303,14 +1307,14 @@
 }
 
 .reelMediaInstagramFrame {
-  position: relative;
-  width: min(100%, 540px);
-  aspect-ratio: 540 / 680;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0 auto;
-  border-radius: 18px;
+  border-radius: inherit;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
 }
 
 .reelInstagramEmbed {
@@ -1318,15 +1322,21 @@
   height: 100%;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .reelInstagramEmbed :global(.instagram-media) {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
+  height: 100% !important;
   margin: 0 auto !important;
+}
+
+.reelInstagramEmbed :global(iframe) {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .reelMediaHitArea {
@@ -1346,18 +1356,10 @@
   transform: scale(1.04);
 }
 
-@media (max-width: 900px) {
-  .reelMediaInstagramFrame {
-    width: min(100%, 420px);
-    aspect-ratio: 540 / 680;
-  }
-}
-
 @media (max-width: 600px) {
   .reelMediaInstagramFrame {
     width: 100%;
-    aspect-ratio: 1 / 1.14;
-    border-radius: 14px;
+    border-radius: inherit;
   }
 }
 
