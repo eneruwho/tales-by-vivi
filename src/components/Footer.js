@@ -12,7 +12,7 @@ const navLinks = [
 ];
 
 const socials = [
-  { name: "Instagram", url: "https://www.instagram.com/talesby.vivi/" }
+  { name: "Instagram", url: "https://www.instagram.com/talesby.vivi/" },
 ];
 
 export default function Footer() {
@@ -124,7 +124,7 @@ export default function Footer() {
             <motion.div className={styles.credits} variants={itemVariants}>
               <span className={styles.creditsTitle}>Crafted by</span>
               <div className={styles.creditsItems}>
-                <span className={styles.creditsItem}>Tales by VIVI</span>
+                <span className={styles.creditsItem}>Vryks Media</span>
                 <span className={styles.creditsSep} />
                 <span className={styles.creditsItem}>
                   © {new Date().getFullYear()}
