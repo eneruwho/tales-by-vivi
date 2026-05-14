@@ -10,7 +10,8 @@ export default function AboutPage() {
         <SplitTextReveal
           elementType="h1"
           className={styles.heroText}
-          text="Digital Artists.<br/>World-class.<br/>Nothing less."
+          text="WORLD-CLASS IMAGERY.<br/>NO COMPROMISES.
+"
           delay={0.3}
           stagger={0.1}
         />
@@ -19,7 +20,7 @@ export default function AboutPage() {
           <SplitTextReveal
             elementType="p"
             className={styles.paragraph}
-            text="Since 2022, Tales by VIVI has been a creative production house. We create premium digital imagery and animation alongside world-class artists for ambitious brands."
+            text="Tales by vivi is a creative production house built on serious craft. We don't just assemble footage. We build the grade, shape the narrative, and push the boundaries of digital artistry to deliver premium, undeniable visuals."
             delay={0.6}
             stagger={0.02}
           />
@@ -29,16 +30,15 @@ export default function AboutPage() {
           <SplitTextReveal
             elementType="h2"
             className={styles.h2}
-            text="Founded by Vivi — your trusted partner who"
+            text="Founded by Vivi — We are the partners who"
             delay={0.1}
             stagger={0.02}
           />
           <ul className={styles.list}>
-            <li>will never cancel a business lunch.</li>
-            <li>replies faster than your group chat.</li>
-            <li>takes the work seriously, not herself.</li>
-            <li>can stay longer on calls than your grandma.</li>
-            <li>would choose pizza for her last meal.</li>
+            <li>obsess over the smallest pixel so you don&apos;t have to.</li>
+            <li>integrate the latest AI capabilities without ever losing the human touch.</li>
+            <li>deliver faster than your deadlines demand.</li>
+            <li>would honestly choose a flawless final export over almost anything (except maybe a great slice of pizza).</li>
           </ul>
         </div>
 

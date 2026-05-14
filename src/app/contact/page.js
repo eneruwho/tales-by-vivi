@@ -10,7 +10,7 @@ export default function ContactPage() {
         <SplitTextReveal
           elementType="h1"
           className={styles.h1}
-          text="We’re friendly.<br/>We’re talented.<br/>We answer fast.<br/>Call us!"
+          text="Pixel Perfect.<br/>FRAME ACCURATE.<br/>STORY DRIVEN.<br/>REACH OUT."
           delay={0.1}
           stagger={0.05}
         />
@@ -19,7 +19,7 @@ export default function ContactPage() {
           <SplitTextReveal
             elementType="h2"
             className={styles.h2}
-            text="Always open to bold ideas and serious craft."
+            text="Elevating narratives through meticulous editing, color, and cinematic design."
             delay={0.6}
             stagger={0.02}
           />
@@ -30,8 +30,8 @@ export default function ContactPage() {
             transition={{ delay: 1, duration: 0.8 }}
             style={{ marginTop: "0.5rem" }}
           >
-            <a href="mailto:hello@talesbyvivi.fr" data-cursor="hover">
-              hello@talesbyvivi.fr
+            <a href="mailto:talesbyvivi@gmail.com" data-cursor="hover">
+              talesbyvivi@gmail.com
             </a>
           </motion.h2>
         </div>
