@@ -36,7 +36,6 @@ export default function AboutPage() {
           />
           <ul className={styles.list}>
             <li>obsess over the smallest pixel so you don&apos;t have to.</li>
-            <li>integrate the latest AI capabilities without ever losing the human touch.</li>
             <li>deliver faster than your deadlines demand.</li>
             <li>would honestly choose a flawless final export over almost anything (except maybe a great slice of pizza).</li>
           </ul>
