@@ -201,24 +201,6 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.cardLink {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .mediaWrap {
   position: relative;
   aspect-ratio: 16 / 10;
@@ -308,8 +290,6 @@
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: var(--muted);
-  position: relative;
-  z-index: 2;
 }
 
 .artistLink:hover {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./projects.module.css";
 import {
   getProjectArtistEntries,
@@ -134,6 +134,7 @@ function FilterChip({ href, children, active = false }) {
 }
 
 export default function ProjectsClient({ projects = [] }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.toString();
 
@@ -324,17 +325,16 @@ export default function ProjectsClient({ projects = [] }) {
               const roleSummary = getProjectArtistRoleSummary(project);
 
               return (
-                <article key={project.id} className={styles.card}>
-                  <Link
-                    href={`/projects/${project.slug}`}
-                    className={styles.cardLink}
-                    data-cursor="hover"
-                    aria-label={`Open ${project.title}`}
-                  >
-                    <span className={styles.srOnly}>
-                      Open {project.title}
-                    </span>
-                  </Link>
+                <article
+                  key={project.id}
+                  className={styles.card}
+                  onClick={() => router.push(`/projects/${project.slug}`)}
+                  style={{ cursor: "pointer" }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === "Enter" && router.push(`/projects/${project.slug}`)}
+                  aria-label={`Open ${project.title}`}
+                >
                   <div className={styles.mediaWrap}>
                     {imageSrc ? (
                       <Image
@@ -375,6 +375,7 @@ export default function ProjectsClient({ projects = [] }) {
                             href={`/artists/${artist.slug}`}
                             className={styles.artistLink}
                             data-cursor="hover"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {artist.name}
                           </Link>
