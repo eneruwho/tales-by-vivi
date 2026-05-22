@@ -308,6 +308,8 @@
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: var(--muted);
+  position: relative;
+  z-index: 2;
 }
 
 .artistLink:hover {
