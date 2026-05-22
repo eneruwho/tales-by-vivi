@@ -286,6 +286,150 @@
   .grid {
     grid-template-columns: 1fr;
   }
+
+  .container {
+    padding: 3rem 1.5rem;
+  }
+
+  .adminDashboard {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .adminControlsTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tableWrapper {
+    overflow-x: auto;
+    font-size: 0.85rem;
+  }
+
+  .tableRow td {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .tableHeader th {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .modalContent {
+    width: 95vw;
+    padding: 1rem;
+  }
+
+  .formPanel {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 2.5rem 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .adminDashboard {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .dashboardButton,
+  .dashboardButtonWhite {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .adminControlsTop {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .controlButtons {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .updateSection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .updatePanel {
+    flex: 1 1 100%;
+  }
+
+  .updateButtons {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tableWrapper {
+    overflow-x: auto;
+    font-size: 0.75rem;
+  }
+
+  .tableRow td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .tableHeader th {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .tableAction,
+  .actionButton {
+    min-width: 60px;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .projectCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .projectInfo {
+    width: 100%;
+  }
+
+  .deleteButton,
+  .editButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .formPanel {
+    padding: 1rem;
+  }
+
+  .button {
+    padding: 0.85rem;
+    font-size: 0.95rem;
+  }
+
+  .input,
+  .textarea {
+    font-size: 0.95rem;
+    padding: 0.65rem;
+  }
+
+  .statCard {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .statValue {
+    font-size: 1.3rem;
+  }
 }
 
 .formPanel {

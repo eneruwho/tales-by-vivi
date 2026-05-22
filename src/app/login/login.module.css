@@ -72,6 +72,19 @@
   opacity: 0.8;
 }
 
+@media (max-width: 768px) {
+  .container {
+    height: auto;
+    min-height: 100svh;
+    padding: 5rem 1.5rem 2rem;
+  }
+
+  .form {
+    max-width: 420px;
+    padding: 2.25rem 1.75rem;
+  }
+}
+
 @media (max-width: 480px) {
   .container {
     height: auto;

@@ -209,6 +209,29 @@
   }
 }
 
+@media (max-width: 768px) {
+  .main {
+    padding: 8.5rem 3.5vw 2.5rem;
+  }
+
+  .heroGrid {
+    gap: 1rem;
+  }
+
+  .heroImage {
+    max-width: 100%;
+  }
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .info {
+    padding: 1.5rem;
+  }
+}
+
 @media (max-width: 480px) {
   .main {
     padding: 8.5rem 1rem 2rem;
