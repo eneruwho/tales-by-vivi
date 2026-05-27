@@ -4,7 +4,10 @@ import gsap from "gsap";
 import styles from "./artistDetail.module.css";
 import Link from "next/link";
 import Image from "next/image";
-import { getProjectArtistEntries } from "../../../lib/projectArtists";
+import {
+  getProjectArtistEntries,
+  buildProjectArtistSelections,
+} from "../../../lib/projectArtists";
 export default function ArtistProfileClient({ artist, projects }) {
   const heroRef = useRef(null);
   const gridRef = useRef(null);
@@ -202,6 +205,22 @@ export default function ArtistProfileClient({ artist, projects }) {
                 </div>
                 <div className={styles.info}>
                   <h3>{project.title}</h3>
+                  {/* Show roles for the current artist only */}
+                  {(() => {
+                    const selections = buildProjectArtistSelections(
+                      project,
+                      project.artists || [],
+                    );
+                    const sel = selections.find((s) => s.slug === artist.slug);
+                    if (sel && sel.rolesText) {
+                      return (
+                        <div style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                          <strong>Role:</strong> {sel.rolesText}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   {projectArtists.length > 1 && (
                     <div className={styles.coArtistRow}>
                       {projectArtists.map((artist) => (
