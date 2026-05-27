@@ -11,6 +11,35 @@ function isFirestoreReady() {
   return Boolean(firestore && firestore.db && firestore.collections);
 }
 
+let projectsCache = null;
+let projectsCacheLoaded = false;
+let projectsCachePromise = null;
+
+let artistsCache = null;
+let artistsCacheLoaded = false;
+let artistsCachePromise = null;
+
+function resetProjectCache() {
+  projectsCache = null;
+  projectsCacheLoaded = false;
+  projectsCachePromise = null;
+}
+
+function resetArtistCache() {
+  artistsCache = null;
+  artistsCacheLoaded = false;
+  artistsCachePromise = null;
+}
+
+function isQuotaExceededError(error) {
+  return (
+    error?.code === 8 ||
+    error?.code === "RESOURCE_EXHAUSTED" ||
+    error?.code === "resource-exhausted" ||
+    String(error?.message || "").includes("RESOURCE_EXHAUSTED")
+  );
+}
+
 function toDoc(data) {
   return data ? { id: data.id, ...data } : null;
 }
@@ -72,6 +101,23 @@ async function getArtistsLookup() {
   );
 }
 
+async function readProjectsFromFirestore() {
+  const snap = await firestore.collections.projects.get();
+  const projects = snap.docs.map((doc) => toDoc(doc.data()));
+  const artistsLookup = await getArtistsLookup();
+  return sortProjectsByCreatedAtDesc(
+    enrichProjectsWithArtists(projects, artistsLookup),
+  );
+}
+
+async function readArtistsFromFirestore() {
+  const snap = await firestore.collections.artists.get();
+  const artists = snap.docs.map((doc) => toDoc(doc.data()));
+  return artists.sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || "")),
+  );
+}
+
 function enrichProjectWithArtists(project, artistsLookup) {
   const artistSlugs = normalizeArtistSlugList(project.artistSlugs);
   const artists = artistSlugs.map((slug) => {
@@ -110,33 +156,79 @@ async function getNextIdFirestore(collection) {
 
 export async function getProjects() {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const snap = await firestore.collections.projects.get();
-  const projects = snap.docs.map((doc) => toDoc(doc.data()));
-  const artistsLookup = await getArtistsLookup();
-  return sortProjectsByCreatedAtDesc(
-    enrichProjectsWithArtists(projects, artistsLookup),
-  );
+  if (projectsCacheLoaded) return projectsCache;
+  if (projectsCachePromise) return projectsCachePromise;
+
+  projectsCachePromise = (async () => {
+    try {
+      const projects = await readProjectsFromFirestore();
+      projectsCache = projects;
+      projectsCacheLoaded = true;
+      return projects;
+    } catch (error) {
+      if (isQuotaExceededError(error)) {
+        console.warn(
+          "Firestore quota exceeded while reading projects; using empty homepage project list",
+        );
+        projectsCache = [];
+        projectsCacheLoaded = true;
+        return projectsCache;
+      }
+
+      throw error;
+    } finally {
+      projectsCachePromise = null;
+    }
+  })();
+
+  return projectsCachePromise;
 }
 
 export async function getProjectBySlug(slug) {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const q = await firestore.collections.projects
-    .where("slug", "==", slug)
-    .limit(1)
-    .get();
-  if (q.empty) return null;
-  const project = toDoc(q.docs[0].data());
-  const artistsLookup = await getArtistsLookup();
-  return enrichProjectWithArtists(project, artistsLookup);
+  try {
+    const q = await firestore.collections.projects
+      .where("slug", "==", slug)
+      .limit(1)
+      .get();
+    if (q.empty) return null;
+    const project = toDoc(q.docs[0].data());
+    const artistsLookup = await getArtistsLookup();
+    return enrichProjectWithArtists(project, artistsLookup);
+  } catch (error) {
+    if (isQuotaExceededError(error)) return null;
+    throw error;
+  }
 }
 
 export async function getArtists() {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const snap = await firestore.collections.artists.get();
-  const artists = snap.docs.map((doc) => toDoc(doc.data()));
-  return artists.sort((a, b) =>
-    String(a.name || "").localeCompare(String(b.name || "")),
-  );
+  if (artistsCacheLoaded) return artistsCache;
+  if (artistsCachePromise) return artistsCachePromise;
+
+  artistsCachePromise = (async () => {
+    try {
+      const artists = await readArtistsFromFirestore();
+      artistsCache = artists;
+      artistsCacheLoaded = true;
+      return artists;
+    } catch (error) {
+      if (isQuotaExceededError(error)) {
+        console.warn(
+          "Firestore quota exceeded while reading artists; using empty homepage artist list",
+        );
+        artistsCache = [];
+        artistsCacheLoaded = true;
+        return artistsCache;
+      }
+
+      throw error;
+    } finally {
+      artistsCachePromise = null;
+    }
+  })();
+
+  return artistsCachePromise;
 }
 
 export async function getArtistBySlug(slug) {
@@ -151,15 +243,20 @@ export async function getArtistBySlug(slug) {
 
 export async function getProjectsByArtist(artistSlug) {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const snap = await firestore.collections.projects.get();
-  const projects = snap.docs.map((doc) => toDoc(doc.data()));
-  const artistsLookup = await getArtistsLookup();
-  return sortProjectsByCreatedAtDesc(
-    enrichProjectsWithArtists(
-      projects.filter((project) => projectMatchesArtist(project, artistSlug)),
-      artistsLookup,
-    ),
-  );
+  try {
+    const snap = await firestore.collections.projects.get();
+    const projects = snap.docs.map((doc) => toDoc(doc.data()));
+    const artistsLookup = await getArtistsLookup();
+    return sortProjectsByCreatedAtDesc(
+      enrichProjectsWithArtists(
+        projects.filter((project) => projectMatchesArtist(project, artistSlug)),
+        artistsLookup,
+      ),
+    );
+  } catch (error) {
+    if (isQuotaExceededError(error)) return [];
+    throw error;
+  }
 }
 
 export async function addProject(input) {
@@ -195,6 +292,7 @@ export async function addProject(input) {
     createdAt: new Date().toISOString(),
   };
   await firestore.collections.projects.add(project);
+  resetProjectCache();
   return enrichProjectWithArtists(project, await getArtistsLookup());
 }
 
@@ -223,6 +321,8 @@ export async function addArtist(input) {
     createdAt: new Date().toISOString(),
   };
   await firestore.collections.artists.add(artist);
+  resetArtistCache();
+  resetProjectCache();
   return artist;
 }
 
@@ -235,6 +335,8 @@ export async function deleteArtist(id) {
     .get();
   if (q.empty) return false;
   await q.docs[0].ref.delete();
+  resetArtistCache();
+  resetProjectCache();
   return true;
 }
 
@@ -261,6 +363,8 @@ export async function updateArtist(id, input) {
     createdAt: existing.createdAt,
   };
   await docRef.update(updated);
+  resetArtistCache();
+  resetProjectCache();
   return updated;
 }
 
@@ -320,6 +424,7 @@ export async function updateProject(id, input) {
     createdAt: existing.createdAt,
   };
   await docRef.set(updated);
+  resetProjectCache();
   return enrichProjectWithArtists(updated, await getArtistsLookup());
 }
 
@@ -333,6 +438,7 @@ export async function deleteProject(id) {
   if (q.empty) return null;
   const existing = q.docs[0].data();
   await q.docs[0].ref.delete();
+  resetProjectCache();
   return enrichProjectWithArtists(toDoc(existing), await getArtistsLookup());
 }
 

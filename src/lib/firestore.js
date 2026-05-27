@@ -37,6 +37,19 @@ export const collections = db
     }
   : null;
 
+let siteSettingsCache = null;
+let siteSettingsCacheLoaded = false;
+let siteSettingsCachePromise = null;
+
+function isQuotaExceededError(error) {
+  return (
+    error?.code === 8 ||
+    error?.code === "RESOURCE_EXHAUSTED" ||
+    error?.code === "resource-exhausted" ||
+    String(error?.message || "").includes("RESOURCE_EXHAUSTED")
+  );
+}
+
 export async function addOtpRecord(record) {
   if (!db) throw new Error("Firestore not initialized");
   return collections.otps.add(record);
@@ -79,14 +92,44 @@ export async function getAdminByEmail(email) {
 
 export async function getSiteSettings() {
   if (!db) throw new Error("Firestore not initialized");
-  const snap = await collections.settings.doc("site").get();
-  return snap.exists ? { id: snap.id, ...snap.data() } : null;
+  if (siteSettingsCacheLoaded) return siteSettingsCache;
+  if (siteSettingsCachePromise) return siteSettingsCachePromise;
+
+  siteSettingsCachePromise = (async () => {
+    try {
+      const snap = await collections.settings.doc("site").get();
+      const settings = snap.exists ? { id: snap.id, ...snap.data() } : null;
+      siteSettingsCache = settings;
+      siteSettingsCacheLoaded = true;
+      return settings;
+    } catch (error) {
+      if (isQuotaExceededError(error)) {
+        console.warn(
+          "Firestore quota exceeded while reading site settings; using cached/default settings",
+        );
+        siteSettingsCacheLoaded = true;
+        return siteSettingsCache;
+      }
+
+      throw error;
+    } finally {
+      siteSettingsCachePromise = null;
+    }
+  })();
+
+  return siteSettingsCachePromise;
 }
 
 export async function setSiteSettings(updates) {
   if (!db) throw new Error("Firestore not initialized");
   await collections.settings.doc("site").set(updates, { merge: true });
-  return getSiteSettings();
+  siteSettingsCache = {
+    id: "site",
+    ...(siteSettingsCache || {}),
+    ...updates,
+  };
+  siteSettingsCacheLoaded = true;
+  return siteSettingsCache;
 }
 
 export async function getClientLogos() {
