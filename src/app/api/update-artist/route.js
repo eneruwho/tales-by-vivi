@@ -1,6 +1,7 @@
 import * as db from "../../../../src/lib/db";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { invalidateArtistsCache } from "../../../../src/lib/cache";
 
 export async function POST(req) {
   try {
@@ -24,6 +25,7 @@ export async function POST(req) {
       revalidatePath("/artists");
       revalidatePath("/projects");
       revalidatePath("/");
+      invalidateArtistsCache();
     } catch (e) {
       // ignore; revalidation isn't critical if it fails
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as db from "../../../../src/lib/db";
+import { invalidateArtistsCache } from "../../../../src/lib/cache";
 
 export async function POST(req) {
   try {
@@ -22,6 +23,7 @@ export async function POST(req) {
       bio: data.bio || null,
       imageUrl: data.imageUrl || null,
     });
+    invalidateArtistsCache();
     return NextResponse.json({ success: true, artist });
   } catch (err) {
     return NextResponse.json(

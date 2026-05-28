@@ -3,6 +3,7 @@ import SmoothScroll from "../components/SmoothScroll";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ThemeProvider from "../components/ThemeProvider";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Tales by VIVI | Creative Partner",
@@ -15,15 +16,17 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en"  crxlauncher="">
+    <html lang="en">
       <body>
-        <ThemeProvider>
-          <SmoothScroll>
-            <Header />
-            {children}
-            <Footer />
-          </SmoothScroll>
-        </ThemeProvider>
+        <Suspense fallback={null}>
+          <ThemeProvider>
+            <SmoothScroll>
+              <Header />
+              {children}
+              <Footer />
+            </SmoothScroll>
+          </ThemeProvider>
+        </Suspense>
       </body>
     </html>
   );

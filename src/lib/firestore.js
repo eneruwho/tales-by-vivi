@@ -1,4 +1,6 @@
 import admin from "firebase-admin";
+import { cacheTag } from "next/cache";
+import { SITE_SETTINGS_TAG } from "./cache.js";
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -36,10 +38,6 @@ export const collections = db
       settings: db.collection("settings"),
     }
   : null;
-
-let siteSettingsCache = null;
-let siteSettingsCacheLoaded = false;
-let siteSettingsCachePromise = null;
 
 function isQuotaExceededError(error) {
   return (
@@ -91,45 +89,30 @@ export async function getAdminByEmail(email) {
 }
 
 export async function getSiteSettings() {
+  "use cache";
+  cacheTag(SITE_SETTINGS_TAG);
+
   if (!db) throw new Error("Firestore not initialized");
-  if (siteSettingsCacheLoaded) return siteSettingsCache;
-  if (siteSettingsCachePromise) return siteSettingsCachePromise;
 
-  siteSettingsCachePromise = (async () => {
-    try {
-      const snap = await collections.settings.doc("site").get();
-      const settings = snap.exists ? { id: snap.id, ...snap.data() } : null;
-      siteSettingsCache = settings;
-      siteSettingsCacheLoaded = true;
-      return settings;
-    } catch (error) {
-      if (isQuotaExceededError(error)) {
-        console.warn(
-          "Firestore quota exceeded while reading site settings; using cached/default settings",
-        );
-        siteSettingsCacheLoaded = true;
-        return siteSettingsCache;
-      }
-
-      throw error;
-    } finally {
-      siteSettingsCachePromise = null;
+  try {
+    const snap = await collections.settings.doc("site").get();
+    return snap.exists ? { id: snap.id, ...snap.data() } : null;
+  } catch (error) {
+    if (isQuotaExceededError(error)) {
+      console.warn(
+        "Firestore quota exceeded while reading site settings; using cached/default settings",
+      );
+      return null;
     }
-  })();
 
-  return siteSettingsCachePromise;
+    throw error;
+  }
 }
 
 export async function setSiteSettings(updates) {
   if (!db) throw new Error("Firestore not initialized");
   await collections.settings.doc("site").set(updates, { merge: true });
-  siteSettingsCache = {
-    id: "site",
-    ...(siteSettingsCache || {}),
-    ...updates,
-  };
-  siteSettingsCacheLoaded = true;
-  return siteSettingsCache;
+  return { id: "site", ...updates };
 }
 
 export async function getClientLogos() {

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import styles from "./Footer.module.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 const navLinks = [
@@ -18,6 +18,8 @@ const socials = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [currentYear] = useState(() => new Date().getFullYear());
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -127,7 +129,7 @@ export default function Footer() {
                 <span className={styles.creditsItem}>Vryks Media</span>
                 <span className={styles.creditsSep} />
                 <span className={styles.creditsItem}>
-                  © {new Date().getFullYear()}
+                  © {currentYear ?? ""}
                 </span>
               </div>
             </motion.div>

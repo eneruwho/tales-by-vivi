@@ -152,6 +152,7 @@ export default function ClientPage({
   const [showreelCopyStep, setShowreelCopyStep] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [introPhase, setIntroPhase] = useState("playing");
+  const [currentYear] = useState(() => String(new Date().getFullYear()));
   const lenis = useLenis();
 
   const familyArtists = Array.isArray(artists) ? artists : [];
@@ -219,6 +220,7 @@ export default function ClientPage({
     Photography: 7,
     Luxury: 17,
     Characters: 26,
+    currentYear,
     AI: 13,
   };
   const categories =
@@ -511,9 +513,7 @@ export default function ClientPage({
             <div className={styles.showreelMeta} aria-hidden={false}>
               <div>
                 <div className={styles.showreelTitle}>Showreel</div>
-                <div className={styles.showreelDates}>
-                  {new Date().getFullYear()}
-                </div>
+                <div className={styles.showreelDates}>{currentYear}</div>
               </div>
             </div>
 

@@ -4,6 +4,12 @@ import * as db from "../lib/db";
 import { revalidatePath } from "next/cache";
 import { uploadBuffer } from "../lib/cloudinary";
 import { normalizeProjectArtistRoles } from "../lib/projectArtists";
+import {
+  invalidateArtistsCache,
+  invalidateClientLogosCache,
+  invalidateProjectsCache,
+  invalidateSiteSettingsCache,
+} from "../lib/cache";
 
 export async function getProjects() {
   return db.getProjects();
@@ -214,6 +220,7 @@ export async function addProject(formData) {
   });
   revalidatePath("/admin");
   revalidateProjectArtistPaths(created);
+  invalidateProjectsCache();
 
   return created;
 }
@@ -240,6 +247,7 @@ export async function addArtist(formData) {
 
   revalidatePath("/admin");
   revalidatePath("/artists");
+  invalidateArtistsCache();
 
   return created;
 }
@@ -259,6 +267,7 @@ export async function updateShowreel(formData) {
   });
   revalidatePath("/");
   revalidatePath("/admin");
+  invalidateSiteSettingsCache();
 }
 
 export async function addClientLogos(formData) {
@@ -274,12 +283,14 @@ export async function addClientLogos(formData) {
   await db.addClientLogos(uploaded);
   revalidatePath("/");
   revalidatePath("/admin");
+  invalidateClientLogosCache();
 }
 
 export async function removeClientLogo(publicId) {
   await db.deleteClientLogo(publicId);
   revalidatePath("/");
   revalidatePath("/admin");
+  invalidateClientLogosCache();
 }
 
 export async function deleteArtist(id) {
@@ -287,6 +298,7 @@ export async function deleteArtist(id) {
 
   revalidatePath("/admin");
   revalidatePath("/artists");
+  invalidateArtistsCache();
 }
 
 export async function updateProject(id, formData) {
@@ -360,6 +372,7 @@ export async function updateProject(id, formData) {
 
   revalidatePath("/admin");
   revalidateProjectArtistPaths({ slug, artistSlugs });
+  invalidateProjectsCache();
 }
 
 export async function deleteProject(id) {
@@ -373,4 +386,5 @@ export async function deleteProject(id) {
     revalidatePath("/artists");
     revalidatePath("/");
   }
+  invalidateProjectsCache();
 }

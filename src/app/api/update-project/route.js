@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as db from "../../../../src/lib/db";
 import { revalidatePath } from "next/cache";
 import { normalizeProjectArtistRoles } from "../../../../src/lib/projectArtists";
+import { invalidateProjectsCache } from "../../../../src/lib/cache";
 
 function slugify(text) {
   return String(text || "")
@@ -111,6 +112,7 @@ export async function POST(req) {
           revalidatePath(`/artists/${slug}`);
         }
       });
+      invalidateProjectsCache();
     } catch (e) {
       // ignore revalidation errors
     }

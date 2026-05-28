@@ -14,7 +14,9 @@ import {
 } from "../../lib/projectArtists";
 
 function normalizeText(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function uniqueValues(values) {
@@ -82,9 +84,7 @@ function toggleFacetValueHref(searchParams, facet, value) {
   const nextValues = current[facet].some(
     (item) => normalizeText(item) === normalizedTarget,
   )
-    ? current[facet].filter(
-        (item) => normalizeText(item) !== normalizedTarget,
-      )
+    ? current[facet].filter((item) => normalizeText(item) !== normalizedTarget)
     : [...current[facet], value];
 
   return buildProjectsHref(searchParams, {
@@ -136,16 +136,11 @@ function FilterChip({ href, children, active = false }) {
 export default function ProjectsClient({ projects = [] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.toString();
-
-  const selectedFilters = useMemo(
-    () => ({
-      category: parseFacetValues(searchParams, "category"),
-      artist: parseFacetValues(searchParams, "artist"),
-      role: parseFacetValues(searchParams, "role"),
-    }),
-    [searchQuery],
-  );
+  const selectedFilters = {
+    category: parseFacetValues(searchParams, "category"),
+    artist: parseFacetValues(searchParams, "artist"),
+    role: parseFacetValues(searchParams, "role"),
+  };
 
   const hasActiveFilters =
     selectedFilters.category.length > 0 ||
@@ -183,9 +178,7 @@ export default function ProjectsClient({ projects = [] }) {
       category: Array.from(categories.values()).sort((a, b) =>
         a.localeCompare(b),
       ),
-      artist: Array.from(artists.values()).sort((a, b) =>
-        a.localeCompare(b),
-      ),
+      artist: Array.from(artists.values()).sort((a, b) => a.localeCompare(b)),
       role: Array.from(roles.values()).sort((a, b) => a.localeCompare(b)),
     };
   }, [projects]);
@@ -246,9 +239,9 @@ export default function ProjectsClient({ projects = [] }) {
             <p className={styles.kicker}>Archive</p>
             <h1 className={styles.title}>Projects</h1>
             <p className={styles.subtitle}>
-              Stack categories, artists, and roles any way you want. The
-              filters combine together, so you can narrow the archive exactly
-              the way you need.
+              Stack categories, artists, and roles any way you want. The filters
+              combine together, so you can narrow the archive exactly the way
+              you need.
             </p>
           </div>
           <Link href="/" className={styles.backLink}>
@@ -303,7 +296,11 @@ export default function ProjectsClient({ projects = [] }) {
                     return (
                       <FilterChip
                         key={value}
-                        href={toggleFacetValueHref(searchParams, group.key, value)}
+                        href={toggleFacetValueHref(
+                          searchParams,
+                          group.key,
+                          value,
+                        )}
                         active={active}
                       >
                         {value}
@@ -332,7 +329,10 @@ export default function ProjectsClient({ projects = [] }) {
                   style={{ cursor: "pointer" }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === "Enter" && router.push(`/projects/${project.slug}`)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    router.push(`/projects/${project.slug}`)
+                  }
                   aria-label={`Open ${project.title}`}
                 >
                   <div className={styles.mediaWrap}>
