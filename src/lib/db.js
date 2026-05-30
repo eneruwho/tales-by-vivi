@@ -24,7 +24,13 @@ function isQuotaExceededError(error) {
 }
 
 function toDoc(data) {
-  return data ? { id: data.id, ...data } : null;
+  if (!data) return null;
+  return {
+    ...data,
+    id: data.id,
+    categories: normalizeCategoryList(data.categories),
+    subcategories: normalizeCategoryList(data.subcategories),
+  };
 }
 
 function normalizeSlug(value) {
@@ -335,12 +341,16 @@ export async function updateProject(id, input) {
     ...existingWithoutLegacy,
     title: input.title,
     slug: input.slug,
-    categories: Array.isArray(input.categories)
-      ? input.categories
-      : existing.categories || [],
-    subcategories: Array.isArray(input.subcategories)
-      ? input.subcategories
-      : existing.subcategories || [],
+    categories: normalizeCategoryList(
+      Array.isArray(input.categories)
+        ? input.categories
+        : existing.categories || [],
+    ),
+    subcategories: normalizeCategoryList(
+      Array.isArray(input.subcategories)
+        ? input.subcategories
+        : existing.subcategories || [],
+    ),
     artistRoles: normalizeProjectArtistRoles(
       input.artistRoles ?? existing.artistRoles ?? [],
     ),

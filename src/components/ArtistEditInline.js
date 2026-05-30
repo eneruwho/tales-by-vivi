@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import styles from "../app/admin/admin.module.css";
+import Loader from "./Loader";
 
 export default function ArtistEditInline({ artist, onSaved }) {
   const [editing, setEditing] = useState(false);
@@ -90,7 +91,7 @@ export default function ArtistEditInline({ artist, onSaved }) {
             placeholder="Short bio"
           />
           <button onClick={save} disabled={loading} className={styles.button}>
-            {loading ? "Saving…" : "Save"}
+            {loading ? <Loader text="Saving…" /> : "Save"}
           </button>
           <button
             onClick={() => setEditing(false)}

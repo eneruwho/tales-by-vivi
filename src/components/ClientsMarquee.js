@@ -138,7 +138,7 @@ export default function ClientsMarquee({ logos = [] }) {
                 className={styles.clientLogo}
                 width={160}
                 height={80}
-                style={{ objectFit: "contain" }}
+                style={{ objectFit: "contain", width: "auto", height: "auto" }}
               />
             </div>
           ))}
@@ -158,7 +158,7 @@ export default function ClientsMarquee({ logos = [] }) {
                 className={styles.clientLogo}
                 width={160}
                 height={80}
-                style={{ objectFit: "contain" }}
+                style={{ objectFit: "contain", width: "auto", height: "auto" }}
               />
             </div>
           ))}

@@ -9,6 +9,7 @@ import Image from "next/image";
 import ClientsMarquee from "../components/ClientsMarquee";
 import InstagramEmbed from "../components/InstagramEmbed";
 import { getProjectArtistLabel } from "../lib/projectArtists";
+import IntroLoader from "../components/IntroLoader";
 import styles from "./page.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -82,7 +83,6 @@ export default function ClientPage({
   const [activeReelIdx, setActiveReelIdx] = useState(0);
   const [showreelCopyStep, setShowreelCopyStep] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const [introPhase, setIntroPhase] = useState("playing");
   const [currentYear] = useState(() => String(new Date().getFullYear()));
   const lenis = useLenis();
 
@@ -184,7 +184,7 @@ export default function ClientPage({
   }, []);
 
   useEffect(() => {
-    if (!lenis || !showreelRef.current || introPhase !== "done") return;
+    if (!lenis || !showreelRef.current) return;
 
     const handleWheel = (event) => {
       const section = showreelRef.current;
@@ -226,7 +226,7 @@ export default function ClientPage({
 
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => window.removeEventListener("wheel", handleWheel);
-  }, [introPhase, lenis, showreelCopyStep]);
+  }, [lenis, showreelCopyStep]);
 
   useEffect(() => {
     const checkMobile = () =>
@@ -272,91 +272,11 @@ export default function ClientPage({
     return () => trigger.kill();
   }, [familyArtists.length]);
 
-  useEffect(() => {
-    if (introPhase !== "playing") return;
-
-    // Safety timeout in case video ended doesn't fire on some browsers.
-    const forceExit = setTimeout(() => {
-      setIntroPhase((prev) => (prev === "playing" ? "exiting" : prev));
-    }, 3000);
-
-    return () => clearTimeout(forceExit);
-  }, [introPhase]);
-
-  useEffect(() => {
-    if (introPhase !== "exiting") return;
-
-    const complete = setTimeout(() => {
-      setIntroPhase("done");
-    }, 900);
-
-    return () => clearTimeout(complete);
-  }, [introPhase]);
-
-  useEffect(() => {
-    const shouldLockScroll = introPhase !== "done";
-    const previousOverflow = document.body.style.overflow;
-
-    if (shouldLockScroll) {
-      document.body.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [introPhase]);
+  
 
   return (
     <div className={styles.pageRoot} ref={containerRef}>
-      <AnimatePresence>
-        {introPhase !== "done" && (
-          <motion.div
-            className={styles.introLoader}
-            initial={{ opacity: 1, scale: 1 }}
-            animate={
-              introPhase === "exiting"
-                ? { opacity: 0, scale: 1.08, filter: "blur(8px)" }
-                : { opacity: 1, scale: 1, filter: "blur(0px)" }
-            }
-            exit={{ opacity: 0 }}
-            transition={{
-              duration: introPhase === "exiting" ? 0.9 : 0.45,
-              ease: "easeInOut",
-            }}
-          >
-            <motion.video
-              src={FALLBACK_VIDEO}
-              className={styles.introLoaderVideo}
-              autoPlay
-              muted
-              playsInline
-              preload="metadata"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              onEnded={() => {
-                setIntroPhase((prev) =>
-                  prev === "playing" ? "exiting" : prev,
-                );
-              }}
-              onError={() => {
-                setIntroPhase((prev) =>
-                  prev === "playing" ? "exiting" : prev,
-                );
-              }}
-            />
-            <Image
-              src="/logo.png"
-              alt="Tales by VIVI"
-              className={styles.introLogo}
-              width={600}
-              height={200}
-              unoptimized
-            />
-            <div className={styles.introLoaderOverlay} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <IntroLoader />
 
       {/* ── FIXED FULL-PAGE BACKGROUND ── */}
       <AnimatePresence>
@@ -405,34 +325,34 @@ export default function ClientPage({
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.42, ease: "easeOut" }}
                   >
-                    <Image
-                      src="/hero-heading1.png"
-                      alt="Tales by VIVI"
-                      className={`${styles.heroHeadingImg} ${styles.showreelHeadingMain}`}
-                      width={1200}
-                      height={260}
-                      unoptimized
-                      style={{ height: "auto" }}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="showreel-copy-2"
-                    className={styles.showreelCopyPanel}
-                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -16, scale: 0.98 }}
-                    transition={{ duration: 0.42, ease: "easeOut" }}
-                  >
-                    <Image
-                      src="/hero-heading2.png"
-                      alt="Chaos meets vision"
-                      className={styles.heroHeadingImg}
-                      width={1200}
-                      height={220}
-                      unoptimized
-                      style={{ height: "auto" }}
-                    />
+              <Image
+                src="/hero-heading1.png"
+                alt="Tales by VIVI"
+                className={`${styles.heroHeadingImg} ${styles.showreelHeadingMain}`}
+                width={1200}
+                height={260}
+                unoptimized
+                style={{ width: "100%", height: "auto" }}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="showreel-copy-2"
+              className={styles.showreelCopyPanel}
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.98 }}
+              transition={{ duration: 0.42, ease: "easeOut" }}
+            >
+              <Image
+                src="/hero-heading2.png"
+                alt="Chaos meets vision"
+                className={styles.heroHeadingImg}
+                width={1200}
+                height={220}
+                unoptimized
+                style={{ width: "100%", height: "auto" }}
+              />
                     <Link
                       href="/artists"
                       className={styles.showreelCopyCta}

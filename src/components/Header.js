@@ -77,8 +77,12 @@ export default function Header() {
   ];
 
   const pillVariants = {
-    closed: { width: 100, borderRadius: 40 },
-    open: { width: "auto", borderRadius: 8 },
+    closed: { width: 100, borderRadius: 40, height: 52 },
+    open: (isMobile) => ({
+      width: isMobile ? 180 : "auto",
+      height: isMobile ? "auto" : 52,
+      borderRadius: 8,
+    }),
   };
 
   const navItemVariants = {
@@ -114,7 +118,7 @@ export default function Header() {
           aria-label="Go to homepage"
         >
           <Image
-            src="/logo.png"
+            src={kolkataTime !== "00:00" && theme === "light" ? "/dark-logo.png" : "/logo.png"}
             alt="Tales by VIVI"
             className={styles.logoImg}
             width={120}
@@ -134,6 +138,7 @@ export default function Header() {
       <div className={styles.pillContainer}>
         <motion.div
           className={styles.menuPill}
+          custom={isMobile}
           variants={pillVariants}
           animate={menuOpen ? "open" : "closed"}
           transition={{ type: "spring", stiffness: 400, damping: 35 }}
