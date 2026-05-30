@@ -9,6 +9,7 @@ import {
   getProjectArtistEntries,
   getProjectArtistLabel,
   getProjectArtistRoleSummary,
+  getProjectArtistRoleEntries,
   getProjectArtistSlugs,
   getProjectRoleLabels,
 } from "../../lib/projectArtists";
@@ -113,8 +114,46 @@ function matchesProjectFilters(project, selectedFilters) {
   ].filter(Boolean);
   const projectRoles = getProjectRoleLabels(project);
 
+  // Category must match (if selected)
+  if (!matchesSelectedValues(projectCategories, selectedFilters.category))
+    return false;
+
+  const hasArtistSel = selectedFilters.artist.length > 0;
+  const hasRoleSel = selectedFilters.role.length > 0;
+
+  // If both artist and role are selected, require an artist-role pairing
+  if (hasArtistSel && hasRoleSel) {
+    const roleEntries = getProjectArtistRoleEntries(project);
+
+    // Check that at least one selected artist has at least one of the selected roles
+    const artistRoleMatch = selectedFilters.artist.some((selArtist) => {
+      const normArtist = normalizeText(selArtist);
+
+      return roleEntries.some((entry) => {
+        const entrySlug = normalizeText(entry.slug || "");
+        const entryName = normalizeText(entry.name || "");
+
+        const artistMatchesEntry =
+          (entrySlug && entrySlug === normArtist) ||
+          (entryName && entryName === normArtist) ||
+          projectArtistTokens.map(normalizeText).includes(normArtist);
+
+        if (!artistMatchesEntry) return false;
+
+        const entryRoles = (Array.isArray(entry.roles) ? entry.roles : []).map(
+          normalizeText,
+        );
+        return selectedFilters.role.some((selRole) =>
+          entryRoles.includes(normalizeText(selRole)),
+        );
+      });
+    });
+
+    return !!artistRoleMatch;
+  }
+
+  // Fallback: independent facet matching
   return (
-    matchesSelectedValues(projectCategories, selectedFilters.category) &&
     matchesSelectedValues(projectArtistTokens, selectedFilters.artist) &&
     matchesSelectedValues(projectRoles, selectedFilters.role)
   );

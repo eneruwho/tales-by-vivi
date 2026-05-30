@@ -39,7 +39,7 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const check = () => window.innerWidth <= 480;
+    const check = () => window.innerWidth <= 768;
     const update = () => setIsMobile(check());
     update();
     window.addEventListener("resize", update);
@@ -58,13 +58,13 @@ export default function Header() {
 
   const handleMenuMouseEnter = () => {
     if (menuCloseTimeoutRef.current) clearTimeout(menuCloseTimeoutRef.current);
-    setIsMobile(window.innerWidth <= 480);
+    setIsMobile(window.innerWidth <= 768);
     setMenuHovered(true);
     setMenuOpen(true);
   };
 
   const toggleMenu = () => {
-    setIsMobile(window.innerWidth <= 480);
+    setIsMobile(window.innerWidth <= 768);
     setMenuOpen((s) => !s);
   };
 

@@ -16,76 +16,7 @@ gsap.registerPlugin(ScrollTrigger);
 const FALLBACK_IMAGE = "/logo.png";
 const FALLBACK_VIDEO = "/intro_video.mp4";
 
-// ─── Cursor Trail ───
-function CursorTrail({ containerRef, images = [] }) {
-  const trailRef = useRef(null);
-  const lastPos = useRef({ x: 0, y: 0 });
-  const idx = useRef(0);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleMove = (e) => {
-      const rect = container.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const dx = Math.abs(x - lastPos.current.x);
-      const dy = Math.abs(y - lastPos.current.y);
-      if (dx + dy < 60) return;
-      lastPos.current = { x, y };
-
-      const pool = trailRef.current?.querySelectorAll("[data-trail-img]");
-      if (!pool || pool.length === 0) return;
-      const img = pool[idx.current % pool.length];
-      idx.current++;
-
-      img.style.left = `${x - 60}px`;
-      img.style.top = `${y - 60}px`;
-      gsap.killTweensOf(img);
-      gsap.fromTo(
-        img,
-        { opacity: 0, scale: 0.7, rotate: (Math.random() - 0.5) * 20 },
-        {
-          opacity: 1,
-          scale: 1,
-          rotate: 0,
-          duration: 0.4,
-          ease: "power3.out",
-          onComplete: () => {
-            gsap.to(img, {
-              opacity: 0,
-              duration: 0.6,
-              delay: 0.5,
-              ease: "power2.in",
-            });
-          },
-        },
-      );
-    };
-
-    container.addEventListener("mousemove", handleMove);
-    return () => container.removeEventListener("mousemove", handleMove);
-  }, [containerRef]);
-
-  return (
-    <div ref={trailRef} className={styles.trailContainer}>
-      {images.map((src, i) => (
-        <Image
-          key={i}
-          src={src}
-          alt=""
-          data-trail-img
-          className={styles.trailImg}
-          draggable={false}
-          width={120}
-          height={120}
-          unoptimized
-        />
-      ))}
-    </div>
-  );
-}
+// Cursor trail hover effect removed per request.
 
 // ─── Category Row ───
 function CategoryRow({ name, count, img }) {
@@ -416,6 +347,14 @@ export default function ClientPage({
                 );
               }}
             />
+            <Image
+              src="/logo.png"
+              alt="Tales by VIVI"
+              className={styles.introLogo}
+              width={600}
+              height={200}
+              unoptimized
+            />
             <div className={styles.introLoaderOverlay} />
           </motion.div>
         )}
@@ -569,9 +508,6 @@ export default function ClientPage({
             SECTION 3 — THE FAMILY
         ══════════════════════════════════ */}
         <section className={styles.familySection} ref={familyRef}>
-          {!isMobile && (
-            <CursorTrail containerRef={familyRef} images={trailImages} />
-          )}
           <div className={styles.familyInner}>
             <h2 className={styles.familyTitle}>Our Crew</h2>
             <div className={styles.familyLayout}>

@@ -307,6 +307,12 @@
   .closeBtn {
     padding: 0 0.75rem;
   }
+
+  /* Helper class applied from JS to force vertical layout if needed */
+  .mobileNav {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
 }
 
 @media (max-width: 480px) {

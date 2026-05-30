@@ -127,7 +127,9 @@ export default function ArtistProfileClient({ artist, projects }) {
             const hasImage = Boolean(
               project.previewImageUrl || project.imageUrl,
             );
-            const isInstagramOnly = Boolean(mediaType === "instagram" && !hasImage);
+            const isInstagramOnly = Boolean(
+              mediaType === "instagram" && !hasImage,
+            );
             const linkHref = isInstagramOnly
               ? project.instagramUrl
               : `/projects/${project.slug}`;
@@ -214,7 +216,9 @@ export default function ArtistProfileClient({ artist, projects }) {
                     const sel = selections.find((s) => s.slug === artist.slug);
                     if (sel && sel.rolesText) {
                       return (
-                        <div style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                        <div
+                          style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                        >
                           <strong>Role:</strong> {sel.rolesText}
                         </div>
                       );
@@ -224,10 +228,7 @@ export default function ArtistProfileClient({ artist, projects }) {
                   {projectArtists.length > 1 && (
                     <div className={styles.coArtistRow}>
                       {projectArtists.map((artist) => (
-                        <span
-                          key={artist.slug}
-                          className={styles.coArtistText}
-                        >
+                        <span key={artist.slug} className={styles.coArtistText}>
                           {artist.name}
                         </span>
                       ))}
