@@ -1,22 +1,28 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
   const [phase, setPhase] = useState("playing");
+  const exitTimerRef = useRef(null);
+  const fallbackTimerRef = useRef(null);
+  const hasStartedRef = useRef(false);
 
   useEffect(() => {
     // Lock scroll while intro plays
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    // Play for 3 seconds, then start exiting transition
-    const timer = setTimeout(() => {
-      setPhase("exiting");
-    }, 3000);
+    // Fallback: if the video fails to load or play within 6 seconds, exit
+    fallbackTimerRef.current = setTimeout(() => {
+      if (!hasStartedRef.current) {
+        setPhase("exiting");
+      }
+    }, 6000);
 
     return () => {
-      clearTimeout(timer);
       document.body.style.overflow = prevOverflow || "";
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
     };
   }, []);
 
@@ -26,6 +32,21 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
       return () => clearTimeout(t);
     }
   }, [phase]);
+
+  const handleVideoPlay = () => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
+    // Clear fallback timer since video successfully started playing
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current);
+    }
+
+    // Show the intro animation for exactly 3 seconds, then exit
+    exitTimerRef.current = setTimeout(() => {
+      setPhase("exiting");
+    }, 3000);
+  };
 
   if (phase === "done") return null;
 
@@ -50,6 +71,10 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
         autoPlay
         muted
         playsInline
+        preload="auto"
+        onPlay={handleVideoPlay}
+        onPlaying={handleVideoPlay}
+        onEnded={() => setPhase("exiting")}
       />
     </div>
   );
