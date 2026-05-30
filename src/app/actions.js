@@ -4,6 +4,7 @@ import * as db from "../lib/db";
 import { revalidatePath } from "next/cache";
 import { uploadBuffer } from "../lib/cloudinary";
 import { normalizeProjectArtistRoles } from "../lib/projectArtists";
+import { normalizeCategoryList } from "../lib/categories";
 import {
   invalidateArtistsCache,
   invalidateClientLogosCache,
@@ -141,7 +142,7 @@ export async function addProject(formData) {
   }
 
   const rawCategories = formData.get("categories") || "";
-  const categories = parseCommaSeparatedList(rawCategories);
+  const categories = normalizeCategoryList(rawCategories);
   if (categories.length === 0) {
     throw new Error("At least one category is required");
   }
@@ -310,8 +311,8 @@ export async function updateProject(id, formData) {
   }
 
   const rawCategories = formData.get("categories") || "";
-  const categories = parseCommaSeparatedList(rawCategories);
-  const subcategories = parseCommaSeparatedList(
+  const categories = normalizeCategoryList(rawCategories);
+  const subcategories = normalizeCategoryList(
     formData.get("subcategories") || "",
   );
   const artistRoles = normalizeProjectArtistRoles(

@@ -94,10 +94,7 @@ export default function ClientPage({
     activeProject?.mediaType ||
     (activeProject?.instagramUrl ? "instagram" : null);
   const activeArtist = familyArtists[activeFamilyIdx] || null;
-  const trailImages = projects
-    .filter((project) => Boolean(project.imageUrl))
-    .slice(0, 8)
-    .map((project) => project.imageUrl);
+  // trailImages was used for a cursor-trail hover effect that has been removed.
   const categoryImages = projects.reduce((acc, project) => {
     const cats = Array.isArray(project.categories) ? project.categories : [];
     const img = project.previewImageUrl || project.imageUrl;
@@ -151,7 +148,8 @@ export default function ClientPage({
     Photography: 7,
     Luxury: 17,
     Characters: 26,
-    currentYear,
+    // Use a computed property so the current year string becomes the category name
+    [currentYear]: 1,
     AI: 13,
   };
   const categories =

@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { addClientLogos, removeClientLogo } from "../app/actions";
 import styles from "../app/admin/admin.module.css";
 import Toast from "./Toast";
@@ -70,7 +71,11 @@ export default function ClientLogosForm({ initialLogos = [] }) {
 
   return (
     <>
-      <div className={styles.formPanel} style={{ position: "relative" }} aria-busy={loading}>
+      <div
+        className={styles.formPanel}
+        style={{ position: "relative" }}
+        aria-busy={loading}
+      >
         <h2>Client Logos</h2>
         {error && (
           <div
@@ -132,10 +137,12 @@ export default function ClientLogosForm({ initialLogos = [] }) {
                     gap: "0.75rem",
                   }}
                 >
-                  <img
+                  <Image
                     src={logo.url}
                     alt="client logo"
-                    style={{ width: 72, height: 32, objectFit: "contain" }}
+                    width={72}
+                    height={32}
+                    style={{ objectFit: "contain" }}
                   />
                   <div>
                     <div className={styles.artistName}>Client logo</div>

@@ -7,6 +7,7 @@ import {
 } from "./clientLogos.js";
 import { listFolderResources, destroyByPublicId } from "./cloudinary.js";
 import { normalizeProjectArtistRoles } from "./projectArtists.js";
+import { normalizeCategoryList } from "./categories.js";
 import { ARTISTS_TAG, CLIENT_LOGOS_TAG, PROJECTS_TAG } from "./cache.js";
 
 function isFirestoreReady() {
@@ -220,10 +221,8 @@ export async function addProject(input) {
     id: nextId,
     title: input.title,
     slug: input.slug,
-    categories: Array.isArray(input.categories) ? input.categories : [],
-    subcategories: Array.isArray(input.subcategories)
-      ? input.subcategories
-      : [],
+    categories: normalizeCategoryList(input.categories),
+    subcategories: normalizeCategoryList(input.subcategories),
     artistRoles: normalizeProjectArtistRoles(input.artistRoles),
     imageUrl: input.imageUrl ?? null,
     imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],

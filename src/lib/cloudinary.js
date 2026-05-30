@@ -64,7 +64,7 @@ export async function destroy(publicId) {
   return cloudinary.uploader.destroy(publicId, { resource_type: "image" });
 }
 
-export default {
+const cloudinaryClient = {
   uploadFromUrl,
   uploadBuffer,
   destroy,
@@ -72,3 +72,5 @@ export default {
   listFolderResources,
   cloudinary,
 };
+
+export default cloudinaryClient;

@@ -132,7 +132,7 @@ export async function addClientLogos(logos) {
   return getClientLogos();
 }
 
-export default {
+const firestoreClient = {
   db,
   collections,
   addOtpRecord,
@@ -145,3 +145,5 @@ export default {
   getClientLogos,
   addClientLogos,
 };
+
+export default firestoreClient;

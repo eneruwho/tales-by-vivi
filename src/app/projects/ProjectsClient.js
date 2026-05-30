@@ -175,11 +175,14 @@ function FilterChip({ href, children, active = false }) {
 export default function ProjectsClient({ projects = [] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedFilters = {
-    category: parseFacetValues(searchParams, "category"),
-    artist: parseFacetValues(searchParams, "artist"),
-    role: parseFacetValues(searchParams, "role"),
-  };
+  const selectedFilters = useMemo(
+    () => ({
+      category: parseFacetValues(searchParams, "category"),
+      artist: parseFacetValues(searchParams, "artist"),
+      role: parseFacetValues(searchParams, "role"),
+    }),
+    [searchParams],
+  );
 
   const hasActiveFilters =
     selectedFilters.category.length > 0 ||

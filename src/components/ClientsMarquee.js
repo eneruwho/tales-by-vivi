@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import Image from "next/image";
 import styles from "../app/page.module.css";
 import {
   createFallbackClientLogos,
@@ -131,10 +132,13 @@ export default function ClientsMarquee({ logos = [] }) {
         >
           {row1.concat(row1).map((item, i) => (
             <div key={`r1-${i}`} className={styles.marqueeItem}>
-              <img
+              <Image
                 src={item.url}
                 alt="client logo"
                 className={styles.clientLogo}
+                width={160}
+                height={80}
+                style={{ objectFit: "contain" }}
               />
             </div>
           ))}
@@ -148,10 +152,13 @@ export default function ClientsMarquee({ logos = [] }) {
         >
           {row2.concat(row2).map((item, i) => (
             <div key={`r2-${i}`} className={styles.marqueeItem}>
-              <img
+              <Image
                 src={item.url}
                 alt="client logo"
                 className={styles.clientLogo}
+                width={160}
+                height={80}
+                style={{ objectFit: "contain" }}
               />
             </div>
           ))}
