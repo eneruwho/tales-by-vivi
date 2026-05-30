@@ -46,3 +46,9 @@ build.log
 fireBaseAdmin.json
 .claude/
 *.local.json
+CLAUDE.md 
+AGENTS.md 
+Environment.md
+check_db.js
+migrate_db.js
+scripts
