@@ -263,7 +263,7 @@ function getProjectRoleTokens(project) {
  * retained as a bounded server-side filter because legacy documents store
  * roles nested inside artistRoles.
  */
-export async function getProjectsPage({
+async function getProjectsPageInternal({
   limit = 12,
   cursor = "",
   category = [],
@@ -386,6 +386,19 @@ export async function getProjectsPage({
           })
         : null,
   };
+}
+
+export async function getProjectsPage(options = {}) {
+  try {
+    return await getProjectsPageInternal(options);
+  } catch (error) {
+    if (!isQuotaExceededError(error)) throw error;
+
+    // Keep public pages renderable during a Firestore quota incident. The
+    // next request can recover automatically once the quota is restored.
+    console.warn("Firestore quota exceeded while reading project page", error);
+    return { projects: [], hasMore: false, nextCursor: null, degraded: true };
+  }
 }
 
 export async function getProjectBySlug(slug) {
