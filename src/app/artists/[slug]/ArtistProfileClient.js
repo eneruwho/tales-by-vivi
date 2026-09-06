@@ -5,6 +5,7 @@ import styles from "./artistDetail.module.css";
 import Link from "next/link";
 import Image from "next/image";
 import { optimizeImageUrl } from "../../../lib/media";
+import { getProjectExternalUrl } from "../../../lib/externalProjectUrl";
 import {
   getProjectArtistEntries,
   buildProjectArtistSelections,
@@ -14,13 +15,6 @@ export default function ArtistProfileClient({ artist, projects }) {
   const gridRef = useRef(null);
   const placeholderImage =
     'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000"><rect width="100%" height="100%" fill="%23111"/><text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="%23aaa" dominant-baseline="middle" text-anchor="middle">No profile image</text></svg>';
-
-  function getProjectMediaType(project) {
-    if (project?.mediaType) return project.mediaType;
-    if (project?.instagramUrl) return "instagram";
-    if (project?.youtubeUrl || project?.videoUrl) return "youtube";
-    return null;
-  }
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -124,17 +118,12 @@ export default function ArtistProfileClient({ artist, projects }) {
       <section className={styles.projects}>
         <div className={styles.grid} ref={gridRef}>
           {projects.map((project) => {
-            const mediaType = getProjectMediaType(project);
             const hasImage = Boolean(
               project.previewImageUrl || project.imageUrl,
             );
-            const isInstagramOnly = Boolean(
-              mediaType === "instagram" && !hasImage,
-            );
-            const linkHref = isInstagramOnly
-              ? project.instagramUrl
-              : `/projects/${project.slug}`;
-            const external = isInstagramOnly;
+            const externalUrl = getProjectExternalUrl(project);
+            const linkHref = externalUrl || `/projects/${project.slug}`;
+            const external = Boolean(externalUrl);
             const projectArtists = getProjectArtistEntries(project);
 
             return (
@@ -160,7 +149,7 @@ export default function ArtistProfileClient({ artist, projects }) {
                       height={900}
                       sizes="(max-width: 768px) 92vw, 45vw"
                     />
-                  ) : isInstagramOnly ? (
+                  ) : external ? (
                     <div className={styles.instagramPlaceholder} aria-hidden>
                       <div
                         style={{

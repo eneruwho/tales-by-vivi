@@ -6,7 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { optimizeImageUrl } from "../../../lib/media";
 import { X } from "lucide-react";
-import InstagramEmbed from "../../../components/InstagramEmbed";
+import {
+  getProjectExternalLabel,
+  getProjectExternalUrl,
+} from "../../../lib/externalProjectUrl";
 import {
   getProjectArtistEntries,
   getProjectArtistLabel,
@@ -33,9 +36,6 @@ function buildGallery(project) {
   return media.filter((m) => m.url !== heroUrl);
 }
 
-// The project will store the full YouTube embed URL in `project.youtubeUrl`
-// (e.g. https://www.youtube.com/embed/VIDEO_ID). Use it directly.
-
 export default function ProjectDetailClient({ project }) {
   const containerRef = useRef(null);
 
@@ -49,36 +49,9 @@ export default function ProjectDetailClient({ project }) {
     ? project.subcategories
     : [];
   const artistRoles = getProjectArtistRoleSummary(project);
-  const mediaType =
-    project.mediaType || (project.instagramUrl ? "instagram" : "youtube");
-  // Normalize various YouTube URL formats into an embed URL
-  function toYouTubeEmbed(url) {
-    if (!url || typeof url !== "string") return null;
-    const trimmed = url.trim();
-    // Already an embed URL
-    if (trimmed.includes("youtube.com/embed/")) return trimmed;
-    // Standard watch URL
-    const watchMatch = trimmed.match(/[?&]v=([\w-]{6,})/);
-    if (watchMatch && watchMatch[1])
-      return `https://www.youtube.com/embed/${watchMatch[1]}`;
-    // Short youtu.be URL
-    const shortMatch = trimmed.match(/youtu\.be\/([\w-]{6,})/);
-    if (shortMatch && shortMatch[1])
-      return `https://www.youtube.com/embed/${shortMatch[1]}`;
-    // If it's just an ID
-    if (/^[\w-]{6,}$/.test(trimmed))
-      return `https://www.youtube.com/embed/${trimmed}`;
-    return null;
-  }
-
-  // Try youtubeUrl first, fall back to videoUrl or the first videoUrls entry
-  const youtubeEmbedUrl = toYouTubeEmbed(
-    project.youtubeUrl ||
-      project.videoUrl ||
-      (Array.isArray(project.videoUrls) ? project.videoUrls[0] : null),
-  );
-  const instagramUrl = project.instagramUrl || null;
-  const hasInstagramEmbed = mediaType === "instagram" && instagramUrl;
+  const externalUrl = getProjectExternalUrl(project);
+  const externalLabel = getProjectExternalLabel(project);
+  const heroImage = project.previewImageUrl || project.imageUrl;
   const projectArtists = getProjectArtistEntries(project);
 
   useEffect(() => {
@@ -87,27 +60,7 @@ export default function ProjectDetailClient({ project }) {
       { opacity: 0 },
       { opacity: 1, duration: 1.2, ease: "power3.out" },
     );
-    // Debug logs to help diagnose missing iframe in browser
-    try {
-      console.log(
-        "ProjectDetailClient: project.youtubeUrl ->",
-        project.youtubeUrl,
-      );
-      console.log("ProjectDetailClient: project.videoUrl ->", project.videoUrl);
-      console.log(
-        "ProjectDetailClient: project.videoUrls ->",
-        project.videoUrls,
-      );
-      console.log("ProjectDetailClient: youtubeEmbedUrl ->", youtubeEmbedUrl);
-    } catch (e) {
-      // ignore
-    }
-  }, [
-    project.videoUrl,
-    project.videoUrls,
-    project.youtubeUrl,
-    youtubeEmbedUrl,
-  ]);
+  }, []);
 
   return (
     <div className={styles.container} ref={containerRef}>
@@ -118,23 +71,16 @@ export default function ProjectDetailClient({ project }) {
 
       {/* ── HERO ── */}
       <section className={styles.hero}>
-        {hasInstagramEmbed ? (
-          <div className={styles.heroInstagramStage}>
-            <InstagramEmbed
-              url={instagramUrl}
-              title={project.title}
-              className={styles.heroInstagramFrame}
-            />
-          </div>
-        ) : youtubeEmbedUrl ? (
-          <iframe
-            src={youtubeEmbedUrl}
-            title={project.title}
-            className={styles.heroVideo}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+        {heroImage && (
+          <Image
+            src={optimizeImageUrl(heroImage, 1600)}
+            alt={project.title}
+            className={styles.heroBg}
+            fill
+            priority
+            sizes="100vw"
           />
-        ) : null}
+        )}
         <div className={styles.heroOverlay} />
 
         <div className={styles.heroContent}>
@@ -188,30 +134,18 @@ export default function ProjectDetailClient({ project }) {
             </div>
           )}
 
-          {/* video already used as hero background; no inline duplicate */}
-          {!hasInstagramEmbed &&
-            !youtubeEmbedUrl &&
-            (project.youtubeUrl ||
-              project.videoUrl ||
-              (project.videoUrls && project.videoUrls[0])) && (
-              <div
-                style={{
-                  marginTop: "1rem",
-                  padding: "0.6rem 0.8rem",
-                  background: "rgba(255,230,230,0.06)",
-                  border: "1px solid rgba(255,100,100,0.08)",
-                  color: "#ffdede",
-                  borderRadius: 6,
-                }}
-              >
-                Unable to render YouTube embed. Raw URLs:{" "}
-                <span style={{ opacity: 0.9 }}>
-                  {project.youtubeUrl ||
-                    project.videoUrl ||
-                    (project.videoUrls && project.videoUrls[0])}
-                </span>
-              </div>
-            )}
+          {externalUrl && (
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ctaBtn}
+              data-cursor="hover"
+            >
+              {externalLabel}
+              <span className={styles.ctaBtnSquare} />
+            </a>
+          )}
         </div>
       </section>
 

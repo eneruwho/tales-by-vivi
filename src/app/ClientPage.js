@@ -7,9 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import ClientsMarquee from "../components/ClientsMarquee";
-import InstagramEmbed from "../components/InstagramEmbed";
 import { getProjectArtistLabel } from "../lib/projectArtists";
 import IntroLoader from "../components/IntroLoader";
+import {
+  getProjectExternalLabel,
+  getProjectExternalUrl,
+} from "../lib/externalProjectUrl";
 import { optimizeImageUrl, optimizeVideoUrl } from "../lib/media";
 import styles from "./page.module.css";
 
@@ -91,9 +94,8 @@ export default function ClientPage({
   const featuredProjects = projects.slice(0, 5);
   const activeProject =
     featuredProjects[activeReelIdx] || featuredProjects[0] || null;
-  const activeProjectMediaType =
-    activeProject?.mediaType ||
-    (activeProject?.instagramUrl ? "instagram" : null);
+  const activeProjectExternalUrl = getProjectExternalUrl(activeProject);
+  const activeProjectExternalLabel = getProjectExternalLabel(activeProject);
   const activeArtist = familyArtists[activeFamilyIdx] || null;
   // trailImages was used for a cursor-trail hover effect that has been removed.
   const categoryImages = projects.reduce((acc, project) => {
@@ -106,32 +108,6 @@ export default function ClientPage({
     });
     return acc;
   }, {});
-
-  // Resolve a safe embed URL for a video link (YouTube / Vimeo). Return null if not an embed.
-  function resolveEmbedUrl(url) {
-    if (!url) return null;
-    const s = String(url).trim();
-    const lower = s.toLowerCase();
-
-    // YouTube patterns
-    if (lower.includes("youtube") || lower.includes("youtu.be")) {
-      // try to extract a video id from common URL forms
-      const idMatch = s.match(
-        /(?:v=|\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{6,})/,
-      );
-      const id = idMatch ? idMatch[1] : null;
-      if (id)
-        return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
-    }
-
-    // Vimeo pattern
-    if (lower.includes("vimeo")) {
-      const m = s.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-      if (m) return `https://player.vimeo.com/video/${m[1]}`;
-    }
-
-    return null;
-  }
 
   // Category counts from projects + defaults
   const catCounts = projects.reduce((acc, p) => {
@@ -575,87 +551,56 @@ export default function ClientPage({
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 1.05 }}
                       transition={{ duration: 0.7, ease: "easeOut" }}
-                      className={
-                        activeProjectMediaType === "instagram"
-                          ? styles.reelMediaInnerInstagram
-                          : styles.reelMediaInner
-                      }
+                      className={styles.reelMediaInner}
                     >
-                      {activeProjectMediaType === "instagram" ? (
-                        <div className={styles.reelMediaInstagramFrame}>
-                          <InstagramEmbed
-                            url={activeProject.instagramUrl}
-                            title={activeProject.title}
-                            className={styles.reelInstagramEmbed}
-                          />
-                          <Link
-                            href={`/projects/${activeProject.slug}`}
-                            className={styles.reelMediaHitArea}
-                            aria-label={`Open ${activeProject.title}`}
-                            data-cursor="hover"
-                          />
-                        </div>
+                      {activeProjectExternalUrl ? (
+                        <a
+                          href={activeProjectExternalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-cursor="hover"
+                          aria-label={activeProjectExternalLabel}
+                        >
+                          <div className={styles.reelMediaImageWrap}>
+                            <Image
+                              src={optimizeImageUrl(
+                                activeProject.previewImageUrl ||
+                                  activeProject.imageUrl ||
+                                  FALLBACK_IMAGE,
+                                1200,
+                              )}
+                              alt={activeProject.title}
+                              className={styles.reelMedia}
+                              fill
+                              sizes="(max-width: 768px) 92vw, 55vw"
+                            />
+                            <div className={styles.reelMediaOverlay}>
+                              <span>{activeProjectExternalLabel}</span>
+                            </div>
+                          </div>
+                        </a>
                       ) : (
                         <Link
                           href={`/projects/${activeProject.slug}`}
                           data-cursor="hover"
                         >
-                          {/* Render only when we can resolve a safe embed URL; otherwise show preview image */}
-                          {(() => {
-                            const embedSrc = resolveEmbedUrl(
-                              (activeProject &&
-                                (activeProject.youtubeUrl ||
-                                  activeProject.videoUrl)) ||
-                                null,
-                            );
-
-                            if (embedSrc) {
-                              return (
-                                <iframe
-                                  src={embedSrc}
-                                  title="Video player"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                  referrerPolicy="strict-origin-when-cross-origin"
-                                  allowFullScreen
-                                  className={styles.reelMedia}
-                                />
-                              );
-                            }
-
-                            return (
-                              <div className={styles.reelMediaImageWrap}>
-                                <Image
-                                  src={optimizeImageUrl(
-                                    activeProject.imageUrl ||
-                                      activeProject.previewImageUrl ||
-                                      FALLBACK_IMAGE,
-                                    1200,
-                                  )}
-                                  alt={activeProject.title}
-                                  className={styles.reelMedia}
-                                  fill
-                                  sizes="(max-width: 768px) 92vw, 55vw"
-                                />
-                                {/* overlay with subcategories on hover */}
-                                <div
-                                  className={styles.reelMediaOverlay}
-                                  aria-hidden
-                                >
-                                  {(
-                                    activeProject.subcategories ||
-                                    activeProject.subcategory ||
-                                    []
-                                  )
-                                    .toString()
-                                    .split(",")
-                                    .map((s) => s.trim())
-                                    .filter(Boolean)
-                                    .slice(0, 6)
-                                    .join(" • ")}
-                                </div>
-                              </div>
-                            );
-                          })()}
+                          <div className={styles.reelMediaImageWrap}>
+                            <Image
+                              src={optimizeImageUrl(
+                                activeProject.previewImageUrl ||
+                                  activeProject.imageUrl ||
+                                  FALLBACK_IMAGE,
+                                1200,
+                              )}
+                              alt={activeProject.title}
+                              className={styles.reelMedia}
+                              fill
+                              sizes="(max-width: 768px) 92vw, 55vw"
+                            />
+                            <div className={styles.reelMediaOverlay}>
+                              <span>View Project</span>
+                            </div>
+                          </div>
                         </Link>
                       )}
                     </motion.div>
