@@ -10,6 +10,7 @@ import ClientsMarquee from "../components/ClientsMarquee";
 import InstagramEmbed from "../components/InstagramEmbed";
 import { getProjectArtistLabel } from "../lib/projectArtists";
 import IntroLoader from "../components/IntroLoader";
+import { optimizeImageUrl, optimizeVideoUrl } from "../lib/media";
 import styles from "./page.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -50,11 +51,11 @@ function CategoryRow({ name, count, img }) {
         transition={{ duration: 0.7, ease: [0.165, 0.84, 0.44, 1] }}
       >
         <Image
-          src={img}
+          src={optimizeImageUrl(img, 900)}
           alt={name}
           className={styles.catRevealImg}
           fill
-          unoptimized
+          sizes="(max-width: 768px) 90vw, 45vw"
         />
         <div className={styles.catRevealOverlay}>
           <span className={styles.catRevealName}>{name}</span>
@@ -156,6 +157,7 @@ export default function ClientPage({
     Object.keys(catCounts).length > 0 ? catCounts : defaultCategories;
 
   useEffect(() => {
+    if (isMobile) return undefined;
     if (
       !showreelRef.current ||
       !showreelVideoRef.current ||
@@ -181,10 +183,10 @@ export default function ClientPage({
       },
     });
     return () => trigger.kill();
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
-    if (!lenis || !showreelRef.current) return;
+    if (isMobile || !lenis || !showreelRef.current) return;
 
     const handleWheel = (event) => {
       const section = showreelRef.current;
@@ -226,7 +228,7 @@ export default function ClientPage({
 
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => window.removeEventListener("wheel", handleWheel);
-  }, [lenis, showreelCopyStep]);
+  }, [isMobile, lenis, showreelCopyStep]);
 
   useEffect(() => {
     const checkMobile = () =>
@@ -250,7 +252,7 @@ export default function ClientPage({
   }, [isMobile, featuredProjects.length, familyArtists.length]);
 
   useEffect(() => {
-    if (!familyRef.current || familyArtists.length === 0) return;
+    if (isMobile || !familyRef.current || familyArtists.length === 0) return;
 
     const trigger = ScrollTrigger.create({
       trigger: familyRef.current,
@@ -270,7 +272,7 @@ export default function ClientPage({
     });
 
     return () => trigger.kill();
-  }, [familyArtists.length]);
+  }, [familyArtists.length, isMobile]);
 
   
 
@@ -290,11 +292,11 @@ export default function ClientPage({
             transition={{ duration: 1.5, ease: "easeOut" }}
           >
             <Image
-              src={activeProject.imageUrl || FALLBACK_IMAGE}
+              src={optimizeImageUrl(activeProject.imageUrl || FALLBACK_IMAGE, 1600)}
               alt=""
               className={styles.pageBgImg}
               fill
-              unoptimized
+              sizes="100vw"
             />
             <div className={styles.pageBgOverlay} />
           </motion.div>
@@ -331,7 +333,7 @@ export default function ClientPage({
                 className={`${styles.heroHeadingImg} ${styles.showreelHeadingMain}`}
                 width={1200}
                 height={260}
-                unoptimized
+                sizes="100vw"
                 style={{ width: "100%", height: "auto" }}
               />
             </motion.div>
@@ -350,7 +352,7 @@ export default function ClientPage({
                 className={styles.heroHeadingImg}
                 width={1200}
                 height={220}
-                unoptimized
+                sizes="(max-width: 768px) 90vw, 45vw"
                 style={{ width: "100%", height: "auto" }}
               />
                     <Link
@@ -375,15 +377,32 @@ export default function ClientPage({
             </div>
 
             <motion.div ref={showreelVideoRef} className={styles.showreelVideo}>
-              <video
-                src={showreelUrl || activeProject?.videoUrl || FALLBACK_VIDEO}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className={styles.showreelVid}
-                poster={activeProject?.imageUrl || FALLBACK_IMAGE}
-              />
+              {isMobile ? (
+                <Image
+                  src={optimizeImageUrl(
+                    activeProject?.imageUrl || FALLBACK_IMAGE,
+                    720,
+                  )}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  className={styles.showreelVid}
+                />
+              ) : (
+                <video
+                  src={optimizeVideoUrl(
+                    showreelUrl || activeProject?.videoUrl || FALLBACK_VIDEO,
+                    1280,
+                  )}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className={styles.showreelVid}
+                  poster={activeProject?.imageUrl || FALLBACK_IMAGE}
+                />
+              )}
               <motion.div
                 ref={showreelOverlayRef}
                 className={styles.showreelVidOverlay}
@@ -442,15 +461,16 @@ export default function ClientPage({
                       transition={{ duration: 0.6, ease: "easeOut" }}
                     >
                       <Image
-                        src={
+                        src={optimizeImageUrl(
                           activeArtist.imageUrl ||
-                          activeArtist.previewImageUrl ||
-                          FALLBACK_IMAGE
-                        }
+                            activeArtist.previewImageUrl ||
+                            FALLBACK_IMAGE,
+                          900,
+                        )}
                         alt={activeArtist.name}
                         className={styles.familyMediaImg}
                         fill
-                        unoptimized
+                        sizes="(max-width: 768px) 92vw, 50vw"
                       />
                       <div className={styles.familyMediaOverlay}>
                         <div className={styles.familyMediaTitle}>
@@ -605,15 +625,16 @@ export default function ClientPage({
                             return (
                               <div className={styles.reelMediaImageWrap}>
                                 <Image
-                                  src={
+                                  src={optimizeImageUrl(
                                     activeProject.imageUrl ||
-                                    activeProject.previewImageUrl ||
-                                    FALLBACK_IMAGE
-                                  }
+                                      activeProject.previewImageUrl ||
+                                      FALLBACK_IMAGE,
+                                    1200,
+                                  )}
                                   alt={activeProject.title}
                                   className={styles.reelMedia}
                                   fill
-                                  unoptimized
+                                  sizes="(max-width: 768px) 92vw, 55vw"
                                 />
                                 {/* overlay with subcategories on hover */}
                                 <div

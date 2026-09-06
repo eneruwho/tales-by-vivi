@@ -1,14 +1,35 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const INSTAGRAM_SCRIPT_SRC = "https://www.instagram.com/embed.js";
 
 export default function InstagramEmbed({ url, title, className = "" }) {
   const permalink = typeof url === "string" ? url.trim() : "";
+  const containerRef = useRef(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   useEffect(() => {
-    if (!permalink || typeof document === "undefined") return;
+    if (!permalink || !containerRef.current) return undefined;
+    if (!("IntersectionObserver" in window)) {
+      window.setTimeout(() => setShouldLoad(true), 0);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px 0px" },
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [permalink]);
+
+  useEffect(() => {
+    if (!permalink || !shouldLoad || typeof document === "undefined") return;
 
     const processEmbeds = () => {
       try {
@@ -33,12 +54,24 @@ export default function InstagramEmbed({ url, title, className = "" }) {
 
     processEmbeds();
     return undefined;
-  }, [permalink]);
+  }, [permalink, shouldLoad]);
 
   if (!permalink) return null;
 
   return (
-    <div className={className}>
+    <div className={className} ref={containerRef}>
+      {!shouldLoad && (
+        <a
+          href={permalink}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open ${title || "Instagram post"} on Instagram`}
+          style={{ display: "grid", placeItems: "center", minHeight: 180, color: "#3897f0" }}
+        >
+          View this post on Instagram →
+        </a>
+      )}
+      {shouldLoad && (
       <blockquote
         className="instagram-media"
         data-instgrm-captioned
@@ -317,6 +350,7 @@ export default function InstagramEmbed({ url, title, className = "" }) {
           </a>
         </div>
       </blockquote>
+      )}
     </div>
   );
 }

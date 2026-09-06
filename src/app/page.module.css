@@ -1441,6 +1441,10 @@
   background: #ffffff;
 }
 
+.clientsMarqueePlaceholder {
+  min-height: 14rem;
+}
+
 .clientsHeadingWrap {
   position: relative;
   z-index: 20;
@@ -1510,6 +1514,11 @@
   overflow: hidden;
   width: 100%;
   margin: 2rem 0;
+}
+
+.marqueeRowBottom {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 8rem;
 }
 
 .marqueeTrack {
@@ -1584,5 +1593,8 @@
   }
   .clientLogo {
     transform: scale(0.7);
+  }
+  .marqueeRowBottom {
+    display: none;
   }
 }

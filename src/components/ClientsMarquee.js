@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import Image from "next/image";
+import { optimizeImageUrl } from "../lib/media";
 import styles from "../app/page.module.css";
 import {
   createFallbackClientLogos,
@@ -13,6 +14,7 @@ export default function ClientsMarquee({ logos = [] }) {
   const marqueeRef = useRef(null);
   const topTrackRef = useRef(null);
   const bottomTrackRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   const mergedClients = mergeClientLogos(
     createFallbackClientLogos(),
@@ -22,10 +24,35 @@ export default function ClientsMarquee({ logos = [] }) {
     })),
   );
 
-  const row1 = mergedClients.slice(0, Math.ceil(mergedClients.length / 2));
-  const row2 = mergedClients.slice(Math.ceil(mergedClients.length / 2));
+  // Keep the animated DOM bounded even if the CMS grows the client list.
+  const displayClients = mergedClients.slice(0, 24);
+  const row1 = displayClients.slice(0, Math.ceil(displayClients.length / 2));
+  const row2 = displayClients.slice(Math.ceil(displayClients.length / 2));
 
   useEffect(() => {
+    const section = marqueeRef.current;
+    if (!section || isVisible) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      const fallbackTimer = window.setTimeout(() => setIsVisible(true), 0);
+      return () => window.clearTimeout(fallbackTimer);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setIsVisible(true);
+        observer.disconnect();
+      },
+      { rootMargin: "400px 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) return undefined;
     const topTrack = topTrackRef.current;
     const bottomTrack = bottomTrackRef.current;
     if (!topTrack || !bottomTrack) return;
@@ -109,7 +136,28 @@ export default function ClientsMarquee({ logos = [] }) {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", onScroll);
     };
-  }, []);
+  }, [isVisible]);
+
+  const heading = (
+    <div className={styles.clientsHeadingWrap}>
+      <p className={styles.clientsKicker}>Selected brands</p>
+      <h2 id="clients-heading" className={styles.clientsHeading}>
+        Clients that trust us
+      </h2>
+    </div>
+  );
+
+  if (!isVisible) {
+    return (
+      <section
+        ref={marqueeRef}
+        className={`${styles.clientsMarquee} ${styles.clientsMarqueePlaceholder}`}
+        aria-labelledby="clients-heading"
+      >
+        {heading}
+      </section>
+    );
+  }
 
   return (
     <section
@@ -117,15 +165,10 @@ export default function ClientsMarquee({ logos = [] }) {
       className={styles.clientsMarquee}
       aria-labelledby="clients-heading"
     >
-      <div className={styles.clientsHeadingWrap}>
-        <p className={styles.clientsKicker}>Selected brands</p>
-        <h2 id="clients-heading" className={styles.clientsHeading}>
-          Clients that trust us
-        </h2>
-      </div>
+      {heading}
       <div className={styles.clientsMask} />
 
-      <div className={styles.marqueeRow}>
+      <div className={`${styles.marqueeRow} ${styles.marqueeRowBottom}`}>
         <div
           ref={topTrackRef}
           className={`${styles.marqueeTrack} ${styles.marqueeTrackTop}`}
@@ -133,7 +176,7 @@ export default function ClientsMarquee({ logos = [] }) {
           {row1.concat(row1).map((item, i) => (
             <div key={`r1-${i}`} className={styles.marqueeItem}>
               <Image
-                src={item.url}
+                src={optimizeImageUrl(item.url, 220)}
                 alt="client logo"
                 className={styles.clientLogo}
                 width={160}
@@ -153,7 +196,7 @@ export default function ClientsMarquee({ logos = [] }) {
           {row2.concat(row2).map((item, i) => (
             <div key={`r2-${i}`} className={styles.marqueeItem}>
               <Image
-                src={item.url}
+                src={optimizeImageUrl(item.url, 220)}
                 alt="client logo"
                 className={styles.clientLogo}
                 width={160}

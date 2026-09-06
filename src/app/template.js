@@ -1,12 +1,20 @@
 "use client";
 import { motion } from "framer-motion";
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 
 export default function Template({ children }) {
-  const pathname = usePathname();
+  return (
+    <Suspense fallback={<div aria-hidden="true" />}>
+      <TemplateContent>{children}</TemplateContent>
+    </Suspense>
+  );
+}
 
+function TemplateContent({ children }) {
+  const pathname = usePathname();
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/login")) {
-    return <>{children}</>;
+    return children;
   }
 
   return (

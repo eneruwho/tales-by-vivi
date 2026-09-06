@@ -7,6 +7,51 @@
     var(--bg);
 }
 
+.searchForm {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchRow {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.searchInput {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.2));
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.searchButton,
+.loadMoreButton {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.8rem 1.1rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.searchButton:disabled,
+.loadMoreButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.loadMoreWrap {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 0 1rem;
+}
+
 .shell {
   max-width: 1440px;
   margin: 0 auto;

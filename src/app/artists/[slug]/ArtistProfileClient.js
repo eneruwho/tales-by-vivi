@@ -4,6 +4,7 @@ import gsap from "gsap";
 import styles from "./artistDetail.module.css";
 import Link from "next/link";
 import Image from "next/image";
+import { optimizeImageUrl } from "../../../lib/media";
 import {
   getProjectArtistEntries,
   buildProjectArtistSelections,
@@ -63,14 +64,14 @@ export default function ArtistProfileClient({ artist, projects }) {
         <div className={styles.heroGrid}>
           <div className={styles.heroImage}>
             <Image
-              src={
+              src={optimizeImageUrl(
                 artist.imageUrl || artist.previewImageUrl || placeholderImage
-              }
+              , 900)}
               alt={artist.name}
               width={800}
               height={1000}
               style={{ objectFit: "cover" }}
-              unoptimized
+              sizes="(max-width: 768px) 92vw, 45vw"
               onError={() => {}}
             />
           </div>
@@ -149,12 +150,15 @@ export default function ArtistProfileClient({ artist, projects }) {
                 <div className={styles.mediaWrapper}>
                   {hasImage ? (
                     <Image
-                      src={project.previewImageUrl || project.imageUrl}
+                      src={optimizeImageUrl(
+                        project.previewImageUrl || project.imageUrl,
+                        900,
+                      )}
                       alt={project.title}
                       className={styles.image}
                       width={1600}
                       height={900}
-                      unoptimized
+                      sizes="(max-width: 768px) 92vw, 45vw"
                     />
                   ) : isInstagramOnly ? (
                     <div className={styles.instagramPlaceholder} aria-hidden>

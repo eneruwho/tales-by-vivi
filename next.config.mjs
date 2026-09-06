@@ -26,7 +26,7 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://apis.google.com https://ssl.gstatic.com https://www.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://*.youtube.com https://*.google.com https://*.gstatic.com https://youtube.com https://www.youtube.com https://www.youtube-nocookie.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://www.googleapis.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://apis.google.com https://ssl.gstatic.com https://www.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://*.youtube.com https://*.google.com https://*.gstatic.com https://youtube.com https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://*.instagram.com; img-src 'self' data: blob: https://res.cloudinary.com https://*.cdninstagram.com https://*.fbcdn.net; connect-src 'self' https://www.googleapis.com https://www.instagram.com;",
           },
         ],
       },

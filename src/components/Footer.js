@@ -18,7 +18,9 @@ const socials = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [currentYear] = useState(() => new Date().getFullYear());
+  // Keep the footer deterministic during Next.js prerendering. Update this
+  // once per calendar year rather than introducing request-time rendering.
+  const [currentYear] = useState("2026");
 
   const containerVariants = {
     hidden: { opacity: 0 },

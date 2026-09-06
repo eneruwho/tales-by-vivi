@@ -68,6 +68,12 @@ html::-webkit-scrollbar {
   display: none;
 }
 
+@media (pointer: coarse), (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
+  .introLoader {
+    display: none !important;
+  }
+}
+
 body {
   background-color: var(--bg);
   color: var(--fg);

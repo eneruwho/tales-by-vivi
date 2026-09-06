@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { getProjectArtistSlugs } from "../../lib/projectArtists";
+import { optimizeImageUrl } from "../../lib/media";
 
 export default function ArtistsClient({ artists, projects }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -102,10 +103,10 @@ export default function ArtistsClient({ artists, projects }) {
         >
           {activeArtist.cover && (
             <Image
-              src={
+              src={optimizeImageUrl(
                 activeArtist.cover.previewImageUrl ||
                 activeArtist.cover.imageUrl
-              }
+              , 1400)}
               alt=""
               fill
               sizes="100vw"
@@ -172,9 +173,9 @@ export default function ArtistsClient({ artists, projects }) {
                   }}
                 >
                   <Image
-                    src={
+                    src={optimizeImageUrl(
                       activeProject.previewImageUrl || activeProject.imageUrl
-                    }
+                    , 1000)}
                     alt={activeProject.title}
                     fill
                     sizes="(max-width: 768px) 100vw, 45vw"

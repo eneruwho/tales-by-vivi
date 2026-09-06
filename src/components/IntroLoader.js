@@ -8,6 +8,13 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
+    const shouldSkip = window.matchMedia(
+      "(pointer: coarse), (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce)",
+    ).matches;
+    if (shouldSkip) {
+      return undefined;
+    }
+
     // Lock scroll while intro plays
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -52,6 +59,7 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
 
   return (
     <div
+      className="introLoader"
       style={{
         position: "fixed",
         inset: 0,
@@ -71,7 +79,8 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
         autoPlay
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
+        poster="/logo.png"
         onPlay={handleVideoPlay}
         onPlaying={handleVideoPlay}
         onEnded={() => setPhase("exiting")}

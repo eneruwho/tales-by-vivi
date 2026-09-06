@@ -4,6 +4,7 @@ import gsap from "gsap";
 import styles from "./projectDetail.module.css";
 import Link from "next/link";
 import Image from "next/image";
+import { optimizeImageUrl } from "../../../lib/media";
 import { X } from "lucide-react";
 import InstagramEmbed from "../../../components/InstagramEmbed";
 import {
@@ -226,11 +227,11 @@ export default function ProjectDetailClient({ project }) {
               {galleryMedia.map((media, i) => (
                 <div key={i} className={styles.thumb}>
                   <Image
-                    src={media.url}
+                    src={optimizeImageUrl(media.url, 1200)}
                     alt={`${project.title} ${i + 1}`}
                     className={styles.thumbImage}
                     fill
-                    unoptimized
+                    sizes="(max-width: 768px) 100vw, 70vw"
                   />
                 </div>
               ))}

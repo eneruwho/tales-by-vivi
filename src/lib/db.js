@@ -177,11 +177,227 @@ export async function getProjects() {
   return readProjectsFromFirestore();
 }
 
+function encodeProjectsCursor(data) {
+  return Buffer.from(JSON.stringify(data), "utf8").toString("base64url");
+}
+
+function decodeProjectsCursor(value) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
+    if (!parsed.createdAt || !parsed.documentId) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSearchTerm(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 1)[0] || "";
+}
+
+export function buildProjectSearchTokens(input = {}) {
+  return [
+    input.title,
+    input.description,
+    ...(Array.isArray(input.categories) ? input.categories : []),
+    ...(Array.isArray(input.subcategories) ? input.subcategories : []),
+    ...(Array.isArray(input.artistSlugs) ? input.artistSlugs : []),
+    ...getProjectRoleTokens(input),
+  ]
+    .flatMap((value) => String(value || "").toLowerCase().match(/[a-z0-9]+/g) || [])
+    .filter((value, index, values) => values.indexOf(value) === index);
+}
+
+function projectMatchesRole(project, role) {
+  const roles = (Array.isArray(role) ? role : [role])
+    .map((value) => normalizeSlug(value))
+    .filter(Boolean);
+  if (roles.length === 0) return true;
+  const projectRoles = getProjectRoleTokens(project);
+  return roles.some((value) => projectRoles.includes(value));
+}
+
+function projectMatchesPageFilters(project, categories, artists, role) {
+  const projectCategories = normalizeCategoryList(project.categories).map(String);
+  const projectArtists = normalizeArtistSlugList(project.artistSlugs).map(String);
+  const categoryMatch =
+    categories.length === 0 || categories.some((value) => projectCategories.includes(value));
+  const artistMatch =
+    artists.length === 0 || artists.some((value) => projectArtists.includes(value));
+  return categoryMatch && artistMatch && projectMatchesRole(project, role);
+}
+
+function projectMatchesSearch(project, query) {
+  const haystack = [
+    project.title,
+    project.description,
+    ...normalizeCategoryList(project.categories),
+    ...normalizeCategoryList(project.subcategories),
+    ...normalizeArtistSlugList(project.artistSlugs),
+    ...getProjectRoleTokens(project),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query);
+}
+
+function getProjectRoleTokens(project) {
+  const roles = normalizeProjectArtistRoles(project.artistRoles);
+  return roles.flatMap((entry) =>
+    (Array.isArray(entry.roles) ? entry.roles : [])
+      .map(normalizeSlug)
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Bounded, cursor-based project reads for public archive pages.
+ * Category and artist filters are applied by Firestore. Role filtering is
+ * retained as a bounded server-side filter because legacy documents store
+ * roles nested inside artistRoles.
+ */
+export async function getProjectsPage({
+  limit = 12,
+  cursor = "",
+  category = [],
+  artist = [],
+  role = [],
+  query = "",
+} = {}) {
+  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+
+  const pageSize = Math.min(Math.max(Number(limit) || 12, 1), 24);
+  const normalizedCategories = (Array.isArray(category) ? category : [category])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const normalizedArtists = (Array.isArray(artist) ? artist : [artist])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const normalizedQuery = normalizeSearchTerm(query);
+  const normalizedRoles = (Array.isArray(role) ? role : [role])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const decodedCursor = decodeProjectsCursor(cursor);
+  const queryRef = firestore.collections.projects;
+
+  let firestoreQuery = queryRef;
+  if (normalizedQuery) {
+    firestoreQuery = firestoreQuery.where(
+      "searchTokens",
+      "array-contains",
+      normalizedQuery,
+    );
+  } else if (normalizedCategories.length === 1) {
+    firestoreQuery = firestoreQuery.where(
+      "categories",
+      "array-contains",
+      normalizedCategories[0],
+    );
+  } else if (normalizedCategories.length > 1) {
+    firestoreQuery = firestoreQuery.where(
+      "categories",
+      "array-contains-any",
+      normalizedCategories.slice(0, 30),
+    );
+  } else if (normalizedArtists.length === 1) {
+    firestoreQuery = firestoreQuery.where(
+      "artistSlugs",
+      "array-contains",
+      normalizedArtists[0],
+    );
+  } else if (normalizedArtists.length > 1) {
+    firestoreQuery = firestoreQuery.where(
+      "artistSlugs",
+      "array-contains-any",
+      normalizedArtists.slice(0, 30),
+    );
+  }
+
+  firestoreQuery = firestoreQuery
+    .orderBy("createdAt", "desc");
+
+  if (decodedCursor) {
+    firestoreQuery = firestoreQuery.startAfter(decodedCursor.createdAt);
+  }
+
+  // Fetch a small bounded overscan for legacy nested role data, never the
+  // entire collection. Search tokens are added to new/updated documents and
+  // can be backfilled once with the migration script.
+  const boundedLimit = normalizedRoles.length ? pageSize * 3 + 1 : pageSize + 1;
+  let snap;
+  let usedIndexFallback = false;
+  try {
+    snap = await firestoreQuery.limit(boundedLimit).get();
+  } catch (error) {
+    const message = String(error?.message || "").toLowerCase();
+    const missingIndex = error?.code === 9 || message.includes("failed_precondition");
+    if (!missingIndex) throw error;
+    usedIndexFallback = true;
+
+    // Vercel deploys application code separately from Firebase indexes. Keep
+    // filters usable during that short rollout window without crashing the
+    // route; the indexed query becomes active once indexes are deployed.
+    snap = await queryRef
+      .orderBy("createdAt", "desc")
+      .limit(Math.min(boundedLimit * 4, 100))
+      .get();
+  }
+  let rawDocs = snap.docs;
+  const artistsLookup = await getArtistsLookup();
+  let projects = rawDocs
+    .map((doc) => toDoc({ id: doc.id, ...doc.data() }))
+    .filter((project) =>
+      projectMatchesPageFilters(project, normalizedCategories, normalizedArtists, normalizedRoles),
+    )
+    .filter((project) => !normalizedQuery || projectMatchesSearch(project, normalizedQuery))
+    .slice(0, pageSize)
+    .map((project) => enrichProjectWithArtists(project, artistsLookup));
+
+  // Existing records may predate searchTokens. Fall back to the already
+  // cached collection only for a search request so old projects remain
+  // discoverable while the one-time backfill is performed.
+  if (normalizedQuery && projects.length === 0) {
+    projects = (await readProjectsFromFirestore())
+      .filter((project) =>
+        projectMatchesPageFilters(project, normalizedCategories, normalizedArtists, normalizedRoles),
+      )
+      .filter((project) => projectMatchesSearch(project, normalizedQuery))
+      .slice(0, pageSize);
+    rawDocs = [];
+  }
+
+  const lastDoc = rawDocs[rawDocs.length - 1];
+  const hasMore = !usedIndexFallback && rawDocs.length > pageSize;
+  return {
+    projects,
+    hasMore,
+    nextCursor:
+      hasMore && lastDoc
+        ? encodeProjectsCursor({
+            createdAt: lastDoc.get("createdAt"),
+            documentId: lastDoc.id,
+          })
+        : null,
+  };
+}
+
 export async function getProjectBySlug(slug) {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
   try {
-    const projects = await readProjectsFromFirestore();
-    return projects.find((project) => project.slug === slug) || null;
+    const q = await firestore.collections.projects
+      .where("slug", "==", slug)
+      .limit(1)
+      .get();
+    if (q.empty) return null;
+    const project = toDoc({ id: q.docs[0].id, ...q.docs[0].data() });
+    return enrichProjectWithArtists(project, await getArtistsLookup());
   } catch (error) {
     if (isQuotaExceededError(error)) return null;
     throw error;
@@ -195,8 +411,12 @@ export async function getArtists() {
 
 export async function getArtistBySlug(slug) {
   if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const artists = await readArtistsFromFirestore();
-  return artists.find((artist) => artist.slug === slug) || null;
+  const q = await firestore.collections.artists
+    .where("slug", "==", slug)
+    .limit(1)
+    .get();
+  if (q.empty) return null;
+  return toDoc({ id: q.docs[0].id, ...q.docs[0].data() });
 }
 
 export async function getProjectsByArtist(artistSlug) {
@@ -240,6 +460,14 @@ export async function addProject(input) {
     mediaType: input.mediaType ?? null,
     description: input.description ?? null,
     artistSlugs,
+    searchTokens: buildProjectSearchTokens({
+      title: input.title,
+      description: input.description,
+      categories: normalizeCategoryList(input.categories),
+      subcategories: normalizeCategoryList(input.subcategories),
+      artistSlugs,
+      artistRoles: input.artistRoles,
+    }),
     createdAt: new Date().toISOString(),
   };
   await firestore.collections.projects.add(project);
@@ -368,6 +596,14 @@ export async function updateProject(id, input) {
     mediaType: input.mediaType ?? existing?.mediaType ?? null,
     description: input.description ?? null,
     artistSlugs,
+    searchTokens: buildProjectSearchTokens({
+      title: input.title,
+      description: input.description,
+      categories: normalizeCategoryList(input.categories),
+      subcategories: normalizeCategoryList(input.subcategories),
+      artistSlugs,
+      artistRoles: input.artistRoles ?? existing.artistRoles,
+    }),
     id: existing.id,
     createdAt: existing.createdAt,
   };

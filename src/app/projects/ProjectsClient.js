@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./projects.module.css";
+import { optimizeImageUrl } from "../../lib/media";
 import {
   getProjectArtistEntries,
   getProjectArtistLabel,
@@ -172,9 +173,25 @@ function FilterChip({ href, children, active = false }) {
   );
 }
 
-export default function ProjectsClient({ projects = [] }) {
+export default function ProjectsClient({
+  projects = [],
+  initialCursor = null,
+  initialHasMore = false,
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [loadedProjects, setLoadedProjects] = useState(projects);
+  const [nextCursor, setNextCursor] = useState(initialCursor);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
+
+  useEffect(() => {
+    setLoadedProjects(projects);
+    setNextCursor(initialCursor);
+    setHasMore(initialHasMore);
+    setSearchInput(searchParams.get("q") || "");
+  }, [projects, initialCursor, initialHasMore, searchParams]);
   const selectedFilters = useMemo(
     () => ({
       category: parseFacetValues(searchParams, "category"),
@@ -194,7 +211,7 @@ export default function ProjectsClient({ projects = [] }) {
     const artists = new Map();
     const roles = new Map();
 
-    projects.forEach((project) => {
+    loadedProjects.forEach((project) => {
       (Array.isArray(project.categories) ? project.categories : []).forEach(
         (category) => {
           const label = String(category || "").trim();
@@ -223,14 +240,47 @@ export default function ProjectsClient({ projects = [] }) {
       artist: Array.from(artists.values()).sort((a, b) => a.localeCompare(b)),
       role: Array.from(roles.values()).sort((a, b) => a.localeCompare(b)),
     };
-  }, [projects]);
+  }, [loadedProjects]);
 
   const filteredProjects = useMemo(() => {
-    if (!hasActiveFilters) return projects;
-    return projects.filter((project) =>
+    if (!hasActiveFilters) return loadedProjects;
+    return loadedProjects.filter((project) =>
       matchesProjectFilters(project, selectedFilters),
     );
-  }, [projects, hasActiveFilters, selectedFilters]);
+  }, [loadedProjects, hasActiveFilters, selectedFilters]);
+
+  async function loadMore() {
+    if (!nextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+
+    const params = new URLSearchParams();
+    params.set("limit", "12");
+    params.set("cursor", nextCursor);
+    ["category", "artist"].forEach((facet) =>
+      selectedFilters[facet].forEach((value) => params.append(facet, value)),
+    );
+    selectedFilters.role.forEach((value) => params.append("role", value));
+    if (searchParams.get("q")) params.set("q", searchParams.get("q"));
+
+    try {
+      const response = await fetch(`/api/get-projects?${params.toString()}`);
+      if (!response.ok) throw new Error("Unable to load more projects");
+      const result = await response.json();
+      setLoadedProjects((current) => [...current, ...(result.projects || [])]);
+      setNextCursor(result.nextCursor || null);
+      setHasMore(Boolean(result.hasMore && result.nextCursor));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
+  function submitSearch(event) {
+    event.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+    if (searchInput.trim()) params.set("q", searchInput.trim());
+    else params.delete("q");
+    router.push(`/projects${params.toString() ? `?${params.toString()}` : ""}`);
+  }
 
   const clearAllHref = buildProjectsHref(searchParams, {});
 
@@ -292,6 +342,23 @@ export default function ProjectsClient({ projects = [] }) {
         </header>
 
         <section className={styles.filtersPanel} aria-label="Project filters">
+          <form className={styles.searchForm} onSubmit={submitSearch}>
+            <label htmlFor="project-search" className={styles.filterGroupTitle}>
+              Search projects
+            </label>
+            <div className={styles.searchRow}>
+              <input
+                id="project-search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Title, category, artist..."
+                className={styles.searchInput}
+              />
+              <button type="submit" className={styles.searchButton}>
+                Search
+              </button>
+            </div>
+          </form>
           <div className={styles.filterPills}>
             <FilterChip href="/projects" active={!hasActiveFilters}>
               All Projects
@@ -380,12 +447,12 @@ export default function ProjectsClient({ projects = [] }) {
                   <div className={styles.mediaWrap}>
                     {imageSrc ? (
                       <Image
-                        src={imageSrc}
+                        src={optimizeImageUrl(imageSrc, 1000)}
                         alt={project.title}
                         className={styles.media}
                         width={1600}
                         height={900}
-                        unoptimized
+                        sizes="(max-width: 768px) 92vw, 45vw"
                       />
                     ) : (
                       <div className={styles.placeholder}>
@@ -449,6 +516,19 @@ export default function ProjectsClient({ projects = [] }) {
             <Link href="/projects" className={styles.adminLink}>
               Clear filters
             </Link>
+          </div>
+        )}
+
+        {hasMore && (
+          <div className={styles.loadMoreWrap}>
+            <button
+              type="button"
+              className={styles.loadMoreButton}
+              onClick={loadMore}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? "Loading..." : "Load more projects"}
+            </button>
           </div>
         )}
       </div>

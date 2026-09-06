@@ -18,15 +18,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Suspense fallback={null}>
-          <ThemeProvider>
-            <SmoothScroll>
+        <ThemeProvider>
+          <SmoothScroll>
+            <Suspense fallback={null}>
               <Header />
-              {children}
-              <Footer />
-            </SmoothScroll>
-          </ThemeProvider>
-        </Suspense>
+            </Suspense>
+            {children}
+            <Footer />
+          </SmoothScroll>
+        </ThemeProvider>
       </body>
     </html>
   );
