@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import argon2 from "argon2";
-import firestore from "../../../../src/lib/firestore";
+import supabaseClient from "../../../lib/supabase";
 
 export async function POST(req) {
   try {
@@ -13,7 +13,7 @@ export async function POST(req) {
     if (!password)
       return NextResponse.json({ error: "Missing password" }, { status: 400 });
 
-    const admin = await firestore.getAdminByEmail(email);
+    const admin = await supabaseClient.getAdminByEmail(email);
     if (!admin)
       return NextResponse.json(
         { error: "Admin account not found" },
@@ -36,11 +36,11 @@ export async function POST(req) {
 
     const sessionId = randomUUID();
     // Session expires after 40 minutes (30 + 10 minute extension)
-    await firestore.createSession({
+    await supabaseClient.createSession({
       sessionId,
       email,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 40 * 60 * 1000,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 40 * 60 * 1000).toISOString(),
     });
 
     const res = NextResponse.json({ success: true });
@@ -51,35 +51,6 @@ export async function POST(req) {
       maxAge: 60 * 40,
     });
     return res;
-
-    /*
-    Mailgun OTP flow disabled for now.
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashed = await argon2.hash(otp);
-    const record = {
-      email,
-      hashed,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 60_000,
-      used: false,
-    };
-    await firestore.addOtpRecord(record);
-
-    const mg = new Mailgun(formData);
-    const mgClient = mg.client({
-      username: "api",
-      key: process.env.MAILGUN_API_KEY,
-    });
-    const domain = process.env.MAILGUN_DOMAIN;
-    await mgClient.messages.create(domain, {
-      from: process.env.MAILGUN_FROM || `no-reply@${domain}`,
-      to: email,
-      subject: "Your admin OTP",
-      text: `Your one-time admin OTP is: ${otp}. It is valid for 1 minute.`,
-    });
-
-    return NextResponse.json({ success: true });
-    */
   } catch (err) {
     return NextResponse.json(
       { error: err.message || "Server error" },

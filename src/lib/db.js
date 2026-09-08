@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import firestore from "./firestore.js";
+import supabaseClient, { supabase, isSupabaseReady } from "./supabase.js";
 import {
   createFallbackClientLogos,
   mergeClientLogos,
@@ -9,29 +9,6 @@ import { listFolderResources, destroyByPublicId } from "./cloudinary.js";
 import { normalizeProjectArtistRoles } from "./projectArtists.js";
 import { normalizeCategoryList } from "./categories.js";
 import { ARTISTS_TAG, CLIENT_LOGOS_TAG, PROJECTS_TAG } from "./cache.js";
-
-function isFirestoreReady() {
-  return Boolean(firestore && firestore.db && firestore.collections);
-}
-
-function isQuotaExceededError(error) {
-  return (
-    error?.code === 8 ||
-    error?.code === "RESOURCE_EXHAUSTED" ||
-    error?.code === "resource-exhausted" ||
-    String(error?.message || "").includes("RESOURCE_EXHAUSTED")
-  );
-}
-
-function toDoc(data) {
-  if (!data) return null;
-  return {
-    ...data,
-    id: data.id,
-    categories: normalizeCategoryList(data.categories),
-    subcategories: normalizeCategoryList(data.subcategories),
-  };
-}
 
 function normalizeSlug(value) {
   return String(value || "")
@@ -65,6 +42,44 @@ function normalizeArtistSlugList(value) {
   return [];
 }
 
+function rowToProject(row) {
+  if (!row) return null;
+  return {
+    id: Number(row.id),
+    title: row.title,
+    slug: row.slug,
+    categories: normalizeCategoryList(row.categories),
+    subcategories: normalizeCategoryList(row.subcategories),
+    artistRoles: normalizeProjectArtistRoles(row.artist_roles),
+    imageUrl: row.image_url ?? null,
+    imageUrls: Array.isArray(row.image_urls) ? row.image_urls : [],
+    previewImageUrl: row.preview_image_url ?? null,
+    videoUrl: row.video_url ?? null,
+    videoUrls: Array.isArray(row.video_urls) ? row.video_urls : [],
+    youtubeUrl: row.youtube_url ?? null,
+    instagramUrl: row.instagram_url ?? null,
+    mediaType: row.media_type ?? null,
+    description: row.description ?? null,
+    artistSlugs: normalizeArtistSlugList(row.artist_slugs),
+    searchTokens: Array.isArray(row.search_tokens) ? row.search_tokens : [],
+    createdAt: row.created_at,
+  };
+}
+
+function rowToArtist(row) {
+  if (!row) return null;
+  return {
+    id: Number(row.id),
+    name: row.name,
+    slug: row.slug,
+    slogan: row.slogan ?? null,
+    bio: row.bio ?? null,
+    instagramUrl: row.instagram_url ?? null,
+    imageUrl: row.image_url ?? null,
+    createdAt: row.created_at,
+  };
+}
+
 function sortProjectsByCreatedAtDesc(projects) {
   return projects.sort((a, b) => {
     const aTime = new Date(a.createdAt || 0).getTime();
@@ -88,50 +103,53 @@ async function getArtistsLookup() {
   return new Map(artists.map((artist) => [normalizeSlug(artist.slug), artist]));
 }
 
-async function readProjectsFromFirestore() {
+async function readProjectsFromSupabase() {
   "use cache";
   cacheTag(PROJECTS_TAG);
   cacheTag(ARTISTS_TAG);
 
-  try {
-    const snap = await firestore.collections.projects.get();
-    const projects = snap.docs.map((doc) => toDoc(doc.data()));
-    const artistsLookup = await getArtistsLookup();
-    return sortProjectsByCreatedAtDesc(
-      enrichProjectsWithArtists(projects, artistsLookup),
-    );
-  } catch (error) {
-    if (isQuotaExceededError(error)) {
-      console.warn(
-        "Firestore quota exceeded while reading projects; using empty homepage project list",
-      );
-      return [];
-    }
-
-    throw error;
+  if (!isSupabaseReady()) {
+    console.warn("Supabase not initialized; returning empty project list");
+    return [];
   }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error reading projects from Supabase:", error);
+    return [];
+  }
+
+  const projects = (data || []).map(rowToProject);
+  const artistsLookup = await getArtistsLookup();
+  return sortProjectsByCreatedAtDesc(
+    enrichProjectsWithArtists(projects, artistsLookup),
+  );
 }
 
-async function readArtistsFromFirestore() {
+async function readArtistsFromSupabase() {
   "use cache";
   cacheTag(ARTISTS_TAG);
 
-  try {
-    const snap = await firestore.collections.artists.get();
-    const artists = snap.docs.map((doc) => toDoc(doc.data()));
-    return artists.sort((a, b) =>
-      String(a.name || "").localeCompare(String(b.name || "")),
-    );
-  } catch (error) {
-    if (isQuotaExceededError(error)) {
-      console.warn(
-        "Firestore quota exceeded while reading artists; using empty homepage artist list",
-      );
-      return [];
-    }
-
-    throw error;
+  if (!isSupabaseReady()) {
+    console.warn("Supabase not initialized; returning empty artist list");
+    return [];
   }
+
+  const { data, error } = await supabase
+    .from("artists")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Error reading artists from Supabase:", error);
+    return [];
+  }
+
+  return (data || []).map(rowToArtist);
 }
 
 function enrichProjectWithArtists(project, artistsLookup) {
@@ -165,16 +183,8 @@ function enrichProjectsWithArtists(projects, artistsLookup) {
   );
 }
 
-async function getNextIdFirestore(collection) {
-  const q = await collection.orderBy("id", "desc").limit(1).get();
-  if (q.empty) return 1;
-  const d = q.docs[0].data();
-  return Number(d.id || 0) + 1;
-}
-
 export async function getProjects() {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  return readProjectsFromFirestore();
+  return readProjectsFromSupabase();
 }
 
 function encodeProjectsCursor(data) {
@@ -185,7 +195,7 @@ function decodeProjectsCursor(value) {
   if (!value) return null;
   try {
     const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
-    if (!parsed.createdAt || !parsed.documentId) return null;
+    if (!parsed.createdAt) return null;
     return parsed;
   } catch {
     return null;
@@ -257,12 +267,6 @@ function getProjectRoleTokens(project) {
   );
 }
 
-/**
- * Bounded, cursor-based project reads for public archive pages.
- * Category and artist filters are applied by Firestore. Role filtering is
- * retained as a bounded server-side filter because legacy documents store
- * roles nested inside artistRoles.
- */
 async function getProjectsPageInternal({
   limit = 12,
   cursor = "",
@@ -271,7 +275,10 @@ async function getProjectsPageInternal({
   role = [],
   query = "",
 } = {}) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  if (!isSupabaseReady()) {
+    console.warn("Supabase not initialized; returning empty project page");
+    return { projects: [], hasMore: false, nextCursor: null, degraded: true };
+  }
 
   const pageSize = Math.min(Math.max(Number(limit) || 12, 1), 24);
   const normalizedCategories = (Array.isArray(category) ? category : [category])
@@ -285,74 +292,33 @@ async function getProjectsPageInternal({
     .map((value) => String(value || "").trim())
     .filter(Boolean);
   const decodedCursor = decodeProjectsCursor(cursor);
-  const queryRef = firestore.collections.projects;
 
-  let firestoreQuery = queryRef;
+  let queryBuilder = supabase.from("projects").select("*");
+
   if (normalizedQuery) {
-    firestoreQuery = firestoreQuery.where(
-      "searchTokens",
-      "array-contains",
-      normalizedQuery,
-    );
-  } else if (normalizedCategories.length === 1) {
-    firestoreQuery = firestoreQuery.where(
-      "categories",
-      "array-contains",
-      normalizedCategories[0],
-    );
-  } else if (normalizedCategories.length > 1) {
-    firestoreQuery = firestoreQuery.where(
-      "categories",
-      "array-contains-any",
-      normalizedCategories.slice(0, 30),
-    );
-  } else if (normalizedArtists.length === 1) {
-    firestoreQuery = firestoreQuery.where(
-      "artistSlugs",
-      "array-contains",
-      normalizedArtists[0],
-    );
-  } else if (normalizedArtists.length > 1) {
-    firestoreQuery = firestoreQuery.where(
-      "artistSlugs",
-      "array-contains-any",
-      normalizedArtists.slice(0, 30),
-    );
+    queryBuilder = queryBuilder.contains("search_tokens", [normalizedQuery]);
+  } else if (normalizedCategories.length > 0) {
+    queryBuilder = queryBuilder.overlaps("categories", normalizedCategories);
+  } else if (normalizedArtists.length > 0) {
+    queryBuilder = queryBuilder.overlaps("artist_slugs", normalizedArtists);
   }
 
-  firestoreQuery = firestoreQuery
-    .orderBy("createdAt", "desc");
+  queryBuilder = queryBuilder.order("created_at", { ascending: false });
 
-  if (decodedCursor) {
-    firestoreQuery = firestoreQuery.startAfter(decodedCursor.createdAt);
+  if (decodedCursor && decodedCursor.createdAt) {
+    queryBuilder = queryBuilder.lt("created_at", decodedCursor.createdAt);
   }
 
-  // Fetch a small bounded overscan for legacy nested role data, never the
-  // entire collection. Search tokens are added to new/updated documents and
-  // can be backfilled once with the migration script.
-  const boundedLimit = normalizedRoles.length ? pageSize * 3 + 1 : pageSize + 1;
-  let snap;
-  let usedIndexFallback = false;
-  try {
-    snap = await firestoreQuery.limit(boundedLimit).get();
-  } catch (error) {
-    const message = String(error?.message || "").toLowerCase();
-    const missingIndex = error?.code === 9 || message.includes("failed_precondition");
-    if (!missingIndex) throw error;
-    usedIndexFallback = true;
+  const fetchLimit = normalizedRoles.length ? pageSize * 3 + 1 : pageSize + 1;
+  queryBuilder = queryBuilder.limit(fetchLimit);
 
-    // Vercel deploys application code separately from Firebase indexes. Keep
-    // filters usable during that short rollout window without crashing the
-    // route; the indexed query becomes active once indexes are deployed.
-    snap = await queryRef
-      .orderBy("createdAt", "desc")
-      .limit(Math.min(boundedLimit * 4, 100))
-      .get();
-  }
-  let rawDocs = snap.docs;
+  const { data: rows, error } = await queryBuilder;
+  if (error) throw error;
+
+  const rawProjects = (rows || []).map(rowToProject);
   const artistsLookup = await getArtistsLookup();
-  let projects = rawDocs
-    .map((doc) => toDoc({ id: doc.id, ...doc.data() }))
+
+  let projects = rawProjects
     .filter((project) =>
       projectMatchesPageFilters(project, normalizedCategories, normalizedArtists, normalizedRoles),
     )
@@ -360,29 +326,26 @@ async function getProjectsPageInternal({
     .slice(0, pageSize)
     .map((project) => enrichProjectWithArtists(project, artistsLookup));
 
-  // Existing records may predate searchTokens. Fall back to the already
-  // cached collection only for a search request so old projects remain
-  // discoverable while the one-time backfill is performed.
   if (normalizedQuery && projects.length === 0) {
-    projects = (await readProjectsFromFirestore())
+    projects = (await readProjectsFromSupabase())
       .filter((project) =>
         projectMatchesPageFilters(project, normalizedCategories, normalizedArtists, normalizedRoles),
       )
       .filter((project) => projectMatchesSearch(project, normalizedQuery))
       .slice(0, pageSize);
-    rawDocs = [];
   }
 
-  const lastDoc = rawDocs[rawDocs.length - 1];
-  const hasMore = !usedIndexFallback && rawDocs.length > pageSize;
+  const lastProject = rawProjects[rawProjects.length - 1];
+  const hasMore = rawProjects.length > pageSize;
+
   return {
     projects,
     hasMore,
     nextCursor:
-      hasMore && lastDoc
+      hasMore && lastProject
         ? encodeProjectsCursor({
-            createdAt: lastDoc.get("createdAt"),
-            documentId: lastDoc.id,
+            createdAt: lastProject.createdAt,
+            id: lastProject.id,
           })
         : null,
   };
@@ -392,259 +355,214 @@ export async function getProjectsPage(options = {}) {
   try {
     return await getProjectsPageInternal(options);
   } catch (error) {
-    if (!isQuotaExceededError(error)) throw error;
-
-    // Keep public pages renderable during a Firestore quota incident. The
-    // next request can recover automatically once the quota is restored.
-    console.warn("Firestore quota exceeded while reading project page", error);
+    console.error("Error reading projects page from Supabase:", error);
     return { projects: [], hasMore: false, nextCursor: null, degraded: true };
   }
 }
 
 export async function getProjectBySlug(slug) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  try {
-    const q = await firestore.collections.projects
-      .where("slug", "==", slug)
-      .limit(1)
-      .get();
-    if (q.empty) return null;
-    const project = toDoc({ id: q.docs[0].id, ...q.docs[0].data() });
-    return enrichProjectWithArtists(project, await getArtistsLookup());
-  } catch (error) {
-    if (isQuotaExceededError(error)) return null;
-    throw error;
-  }
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  const project = rowToProject(data);
+  return enrichProjectWithArtists(project, await getArtistsLookup());
 }
 
 export async function getArtists() {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  return readArtistsFromFirestore();
+  return readArtistsFromSupabase();
 }
 
 export async function getArtistBySlug(slug) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const q = await firestore.collections.artists
-    .where("slug", "==", slug)
-    .limit(1)
-    .get();
-  if (q.empty) return null;
-  return toDoc({ id: q.docs[0].id, ...q.docs[0].data() });
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
+  const { data, error } = await supabase
+    .from("artists")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return rowToArtist(data);
 }
 
 export async function getProjectsByArtist(artistSlug) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  try {
-    const projects = await readProjectsFromFirestore();
-    return projects.filter((project) =>
-      projectMatchesArtist(project, artistSlug),
-    );
-  } catch (error) {
-    if (isQuotaExceededError(error)) return [];
-    throw error;
-  }
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
+  const projects = await readProjectsFromSupabase();
+  return projects.filter((project) =>
+    projectMatchesArtist(project, artistSlug),
+  );
 }
 
 export async function addProject(input) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const q = await firestore.collections.projects
-    .where("slug", "==", input.slug)
-    .limit(1)
-    .get();
-  if (!q.empty) throw new Error(`Project slug already exists: ${input.slug}`);
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
 
-  const nextId = await getNextIdFirestore(firestore.collections.projects);
   const artistSlugs = normalizeArtistSlugList(input.artistSlugs);
+  const searchTokens = buildProjectSearchTokens({
+    title: input.title,
+    description: input.description,
+    categories: normalizeCategoryList(input.categories),
+    subcategories: normalizeCategoryList(input.subcategories),
+    artistSlugs,
+    artistRoles: input.artistRoles,
+  });
 
-  const project = {
-    id: nextId,
+  const row = {
     title: input.title,
     slug: input.slug,
     categories: normalizeCategoryList(input.categories),
     subcategories: normalizeCategoryList(input.subcategories),
-    artistRoles: normalizeProjectArtistRoles(input.artistRoles),
-    imageUrl: input.imageUrl ?? null,
-    imageUrls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
-    previewImageUrl: input.previewImageUrl ?? null,
-    videoUrl: input.videoUrl ?? null,
-    videoUrls: Array.isArray(input.videoUrls) ? input.videoUrls : [],
-    youtubeUrl: input.youtubeUrl ?? null,
-    instagramUrl: input.instagramUrl ?? null,
-    mediaType: input.mediaType ?? null,
+    artist_roles: normalizeProjectArtistRoles(input.artistRoles),
+    image_url: input.imageUrl ?? null,
+    image_urls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
+    preview_image_url: input.previewImageUrl ?? null,
+    video_url: input.videoUrl ?? null,
+    video_urls: Array.isArray(input.videoUrls) ? input.videoUrls : [],
+    youtube_url: input.youtubeUrl ?? null,
+    instagram_url: input.instagramUrl ?? null,
+    media_type: input.mediaType ?? null,
     description: input.description ?? null,
-    artistSlugs,
-    searchTokens: buildProjectSearchTokens({
-      title: input.title,
-      description: input.description,
-      categories: normalizeCategoryList(input.categories),
-      subcategories: normalizeCategoryList(input.subcategories),
-      artistSlugs,
-      artistRoles: input.artistRoles,
-    }),
-    createdAt: new Date().toISOString(),
+    artist_slugs: artistSlugs,
+    search_tokens: searchTokens,
+    created_at: new Date().toISOString(),
   };
-  await firestore.collections.projects.add(project);
+
+  const { data, error } = await supabase
+    .from("projects")
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) throw error;
+  const project = rowToProject(data);
   return enrichProjectWithArtists(project, await getArtistsLookup());
 }
 
 export async function addArtist(input) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  const q = await firestore.collections.artists
-    .where("slug", "==", input.slug)
-    .limit(1)
-    .get();
-  if (!q.empty) throw new Error(`Artist slug already exists: ${input.slug}`);
-  const q2 = await firestore.collections.artists
-    .where("name", "==", input.name)
-    .limit(1)
-    .get();
-  if (!q2.empty) throw new Error(`Artist name already exists: ${input.name}`);
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
 
-  const nextId = await getNextIdFirestore(firestore.collections.artists);
-  const artist = {
-    id: nextId,
+  const row = {
     name: input.name,
     slug: input.slug,
     slogan: input.slogan ?? null,
-    instagramUrl: input.instagramUrl ?? null,
+    instagram_url: input.instagramUrl ?? null,
     bio: input.bio ?? null,
-    imageUrl: input.imageUrl ?? null,
-    createdAt: new Date().toISOString(),
+    image_url: input.imageUrl ?? null,
+    created_at: new Date().toISOString(),
   };
-  await firestore.collections.artists.add(artist);
-  return artist;
+
+  const { data, error } = await supabase
+    .from("artists")
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return rowToArtist(data);
 }
 
 export async function deleteArtist(id) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
   const numericId = Number(id);
-  const q = await firestore.collections.artists
-    .where("id", "==", numericId)
-    .limit(1)
-    .get();
-  if (q.empty) return false;
-  await q.docs[0].ref.delete();
+  const { error } = await supabase.from("artists").delete().eq("id", numericId);
+  if (error) return false;
   return true;
 }
 
 export async function updateArtist(id, input) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
   const numericId = Number(id);
-  const q = await firestore.collections.artists
-    .where("id", "==", numericId)
-    .limit(1)
-    .get();
-  if (q.empty) throw new Error(`Artist not found: ${id}`);
 
-  const docRef = q.docs[0].ref;
-  const existing = q.docs[0].data();
-  const updated = {
-    ...existing,
+  const row = {
     name: input.name,
     slug: input.slug,
-    slogan: input.slogan ?? existing.slogan,
-    instagramUrl: input.instagramUrl ?? existing.instagramUrl ?? null,
-    bio: input.bio ?? existing.bio,
-    imageUrl: input.imageUrl ?? existing.imageUrl ?? null,
-    id: existing.id,
-    createdAt: existing.createdAt,
+    slogan: input.slogan ?? null,
+    instagram_url: input.instagramUrl ?? null,
+    bio: input.bio ?? null,
+    image_url: input.imageUrl ?? null,
   };
-  await docRef.update(updated);
-  return updated;
+
+  const { data, error } = await supabase
+    .from("artists")
+    .update(row)
+    .eq("id", numericId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return rowToArtist(data);
 }
 
 export async function updateProject(id, input) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
   const numericId = Number(id);
-
-  const q = await firestore.collections.projects
-    .where("id", "==", numericId)
-    .limit(1)
-    .get();
-  if (q.empty) throw new Error(`Project not found: ${id}`);
-
-  const docRef = q.docs[0].ref;
-  const existing = q.docs[0].data();
   const artistSlugs = normalizeArtistSlugList(input.artistSlugs);
 
-  const slugQ = await firestore.collections.projects
-    .where("slug", "==", input.slug)
-    .get();
-  if (!slugQ.empty) {
-    const conflict = slugQ.docs.find((doc) => doc.data().id !== numericId);
-    if (conflict) throw new Error(`Project slug already exists: ${input.slug}`);
-  }
-
-  const existingWithoutLegacy = { ...existing };
-  delete existingWithoutLegacy.artist;
-  delete existingWithoutLegacy.artistSlug;
-  const updated = {
-    ...existingWithoutLegacy,
+  const row = {
     title: input.title,
     slug: input.slug,
-    categories: normalizeCategoryList(
-      Array.isArray(input.categories)
-        ? input.categories
-        : existing.categories || [],
-    ),
-    subcategories: normalizeCategoryList(
-      Array.isArray(input.subcategories)
-        ? input.subcategories
-        : existing.subcategories || [],
-    ),
-    artistRoles: normalizeProjectArtistRoles(
-      input.artistRoles ?? existing.artistRoles ?? [],
-    ),
-    imageUrl: input.imageUrl ?? null,
-    imageUrls: Array.isArray(input.imageUrls)
-      ? input.imageUrls
-      : existing.imageUrls || [],
-    previewImageUrl: input.previewImageUrl ?? existing.previewImageUrl ?? null,
-    videoUrl: input.videoUrl ?? null,
-    videoUrls: Array.isArray(input.videoUrls)
-      ? input.videoUrls
-      : existing.videoUrls || [],
-    youtubeUrl: input.youtubeUrl ?? existing.youtubeUrl ?? null,
-    instagramUrl: input.instagramUrl ?? existing.instagramUrl ?? null,
-    mediaType: input.mediaType ?? existing?.mediaType ?? null,
+    categories: normalizeCategoryList(input.categories),
+    subcategories: normalizeCategoryList(input.subcategories),
+    artist_roles: normalizeProjectArtistRoles(input.artistRoles),
+    image_url: input.imageUrl ?? null,
+    image_urls: Array.isArray(input.imageUrls) ? input.imageUrls : [],
+    preview_image_url: input.previewImageUrl ?? null,
+    video_url: input.videoUrl ?? null,
+    video_urls: Array.isArray(input.videoUrls) ? input.videoUrls : [],
+    youtube_url: input.youtubeUrl ?? null,
+    instagram_url: input.instagramUrl ?? null,
+    media_type: input.mediaType ?? null,
     description: input.description ?? null,
-    artistSlugs,
-    searchTokens: buildProjectSearchTokens({
+    artist_slugs: artistSlugs,
+    search_tokens: buildProjectSearchTokens({
       title: input.title,
       description: input.description,
-      categories: normalizeCategoryList(input.categories),
-      subcategories: normalizeCategoryList(input.subcategories),
+      categories: input.categories,
+      subcategories: input.subcategories,
       artistSlugs,
-      artistRoles: input.artistRoles ?? existing.artistRoles,
+      artistRoles: input.artistRoles,
     }),
-    id: existing.id,
-    createdAt: existing.createdAt,
   };
-  await docRef.set(updated);
-  return enrichProjectWithArtists(updated, await getArtistsLookup());
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update(row)
+    .eq("id", numericId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  const project = rowToProject(data);
+  return enrichProjectWithArtists(project, await getArtistsLookup());
 }
 
 export async function deleteProject(id) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
   const numericId = Number(id);
-  const q = await firestore.collections.projects
-    .where("id", "==", numericId)
-    .limit(1)
-    .get();
-  if (q.empty) return null;
-  const existing = q.docs[0].data();
-  await q.docs[0].ref.delete();
-  return enrichProjectWithArtists(toDoc(existing), await getArtistsLookup());
+
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", numericId)
+    .maybeSingle();
+
+  const { error } = await supabase.from("projects").delete().eq("id", numericId);
+  if (error || !existing) return null;
+
+  return enrichProjectWithArtists(rowToProject(existing), await getArtistsLookup());
 }
 
 export async function getSiteSettings() {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  return firestore.getSiteSettings();
+  if (!isSupabaseReady()) return null;
+  return supabaseClient.getSiteSettings();
 }
 
 export async function setSiteSettings(updates) {
-  if (!isFirestoreReady()) throw new Error("Firestore not initialized");
-  return firestore.setSiteSettings(updates);
+  if (!isSupabaseReady()) throw new Error("Supabase not initialized");
+  return supabaseClient.setSiteSettings(updates);
 }
 
 export async function getClientLogos() {
@@ -663,7 +581,7 @@ export async function getClientLogos() {
     );
     return mergeClientLogos(fallbacks, cloudinaryLogos);
   } catch {
-    const logos = await firestore.getClientLogos();
+    const logos = await supabaseClient.getClientLogos();
     return mergeClientLogos(fallbacks, normalizeClientLogoItems(logos));
   }
 }
@@ -678,8 +596,8 @@ export async function addClientLogos(logos) {
     })
     .filter(Boolean);
 
-  await firestore.addClientLogos(normalized);
-  return firestore.getClientLogos();
+  await supabaseClient.addClientLogos(normalized);
+  return supabaseClient.getClientLogos();
 }
 
 export async function deleteClientLogo(publicId) {
@@ -691,12 +609,8 @@ export async function deleteClientLogo(publicId) {
     console.warn("deleteClientLogo: cloudinary delete failed", error?.message);
   }
 
-  const snap = await firestore.collections.clients
-    .where("publicId", "==", publicId)
-    .limit(1)
-    .get();
-  if (!snap.empty) {
-    await snap.docs[0].ref.delete();
+  if (isSupabaseReady()) {
+    await supabase.from("clients").delete().eq("public_id", publicId);
   }
 
   return true;

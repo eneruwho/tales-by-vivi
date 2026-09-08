@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import firestore from "./lib/firestore";
+import supabaseClient from "./lib/supabase";
 
 export async function proxy(request) {
   const url = request.nextUrl.pathname;
@@ -13,8 +13,9 @@ export async function proxy(request) {
     }
 
     try {
-      const session = await firestore.getSessionById(sessionId);
-      if (!session || (session.expiresAt && Date.now() > session.expiresAt)) {
+      const session = await supabaseClient.getSessionById(sessionId);
+      const expiresTime = session?.expiresAt ? new Date(session.expiresAt).getTime() : null;
+      if (!session || (expiresTime && Date.now() > expiresTime)) {
         return NextResponse.redirect(new URL("/login", request.url));
       }
     } catch {
