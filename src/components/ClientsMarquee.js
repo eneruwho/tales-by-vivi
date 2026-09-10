@@ -24,8 +24,8 @@ export default function ClientsMarquee({ logos = [] }) {
     createFallbackClientLogos(),
   );
 
-  // Keep the animated DOM bounded while giving priority to custom uploaded logos.
-  const displayClients = mergedClients.slice(0, Math.max(24, logos.length));
+  // Display all custom uploaded logos and fallback logos together.
+  const displayClients = mergedClients;
   const row1 = displayClients.slice(0, Math.ceil(displayClients.length / 2));
   const row2 = displayClients.slice(Math.ceil(displayClients.length / 2));
 
