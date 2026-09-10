@@ -17,15 +17,15 @@ export default function ClientsMarquee({ logos = [] }) {
   const [isVisible, setIsVisible] = useState(false);
 
   const mergedClients = mergeClientLogos(
-    createFallbackClientLogos(),
     normalizeClientLogoItems(logos).map((logo) => ({
       ...logo,
       source: logo.source || "cloudinary",
     })),
+    createFallbackClientLogos(),
   );
 
-  // Keep the animated DOM bounded even if the CMS grows the client list.
-  const displayClients = mergedClients.slice(0, 24);
+  // Keep the animated DOM bounded while giving priority to custom uploaded logos.
+  const displayClients = mergedClients.slice(0, Math.max(24, logos.length));
   const row1 = displayClients.slice(0, Math.ceil(displayClients.length / 2));
   const row2 = displayClients.slice(Math.ceil(displayClients.length / 2));
 
