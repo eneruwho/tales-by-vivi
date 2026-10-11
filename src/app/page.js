@@ -7,18 +7,30 @@ import {
 import ClientPage from "./ClientPage";
 
 export default async function Home() {
-  const [projects, artists, siteSettings, clientLogos] = await Promise.all([
-    getProjects(),
-    getArtists(),
-    getSiteSettings(),
-    getClientLogos(),
-  ]);
-  return (
-    <ClientPage
-      projects={projects}
-      artists={artists}
-      showreelUrl={siteSettings?.showreelUrl || null}
-      clientLogos={clientLogos}
-    />
-  );
+  try {
+    const [projects, artists, siteSettings, clientLogos] = await Promise.all([
+      getProjects().catch(() => []),
+      getArtists().catch(() => []),
+      getSiteSettings().catch(() => null),
+      getClientLogos().catch(() => []),
+    ]);
+    return (
+      <ClientPage
+        projects={projects || []}
+        artists={artists || []}
+        showreelUrl={siteSettings?.showreelUrl || null}
+        clientLogos={clientLogos || []}
+      />
+    );
+  } catch (error) {
+    console.error("Home page render error:", error);
+    return (
+      <ClientPage
+        projects={[]}
+        artists={[]}
+        showreelUrl={null}
+        clientLogos={[]}
+      />
+    );
+  }
 }
