@@ -9,8 +9,6 @@ const nextConfig = {
       },
     ],
   },
-  serverExternalPackages: ["better-sqlite3"],
-  cacheComponents: true,
   experimental: {
     proxyClientMaxBodySize: "500mb",
     serverActions: {

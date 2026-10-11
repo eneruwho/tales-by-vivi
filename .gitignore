@@ -54,4 +54,5 @@ AGENTS.md
 Environment.md
 check_db.js
 migrate_db.js
-scripts
+scripts/*
+!scripts/patch-opennext.js

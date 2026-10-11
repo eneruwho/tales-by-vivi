@@ -13,7 +13,8 @@
     "migrate:project-artists": "node scripts/migrate-project-artists.js",
     "seed:admin": "node scripts/seed-admin.js",
     "seed:supabase": "node scripts/seed-supabase.js",
-    "migrate:supabase": "node scripts/migrate-firebase-to-supabase.js"
+    "migrate:supabase": "node scripts/migrate-firebase-to-supabase.js",
+    "postinstall": "node scripts/patch-opennext.js"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.10",

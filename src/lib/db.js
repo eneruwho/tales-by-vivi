@@ -1,4 +1,4 @@
-import { cacheTag } from "next/cache";
+import { unstable_cache } from "next/cache";
 import supabaseClient, { supabase, isSupabaseReady } from "./supabase.js";
 import {
   createFallbackClientLogos,
@@ -103,54 +103,55 @@ async function getArtistsLookup() {
   return new Map(artists.map((artist) => [normalizeSlug(artist.slug), artist]));
 }
 
-async function readProjectsFromSupabase() {
-  "use cache";
-  cacheTag(PROJECTS_TAG);
-  cacheTag(ARTISTS_TAG);
+const readProjectsFromSupabase = unstable_cache(
+  async () => {
+    if (!isSupabaseReady()) {
+      console.warn("Supabase not initialized; returning empty project list");
+      return [];
+    }
 
-  if (!isSupabaseReady()) {
-    console.warn("Supabase not initialized; returning empty project list");
-    return [];
-  }
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Error reading projects from Supabase:", error);
+      return [];
+    }
 
-  if (error) {
-    console.error("Error reading projects from Supabase:", error);
-    return [];
-  }
+    const projects = (data || []).map(rowToProject);
+    const artistsLookup = await getArtistsLookup();
+    return sortProjectsByCreatedAtDesc(
+      enrichProjectsWithArtists(projects, artistsLookup),
+    );
+  },
+  ["read-projects-from-supabase"],
+  { tags: [PROJECTS_TAG, ARTISTS_TAG] }
+);
 
-  const projects = (data || []).map(rowToProject);
-  const artistsLookup = await getArtistsLookup();
-  return sortProjectsByCreatedAtDesc(
-    enrichProjectsWithArtists(projects, artistsLookup),
-  );
-}
+const readArtistsFromSupabase = unstable_cache(
+  async () => {
+    if (!isSupabaseReady()) {
+      console.warn("Supabase not initialized; returning empty artist list");
+      return [];
+    }
 
-async function readArtistsFromSupabase() {
-  "use cache";
-  cacheTag(ARTISTS_TAG);
+    const { data, error } = await supabase
+      .from("artists")
+      .select("*")
+      .order("name", { ascending: true });
 
-  if (!isSupabaseReady()) {
-    console.warn("Supabase not initialized; returning empty artist list");
-    return [];
-  }
+    if (error) {
+      console.error("Error reading artists from Supabase:", error);
+      return [];
+    }
 
-  const { data, error } = await supabase
-    .from("artists")
-    .select("*")
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error reading artists from Supabase:", error);
-    return [];
-  }
-
-  return (data || []).map(rowToArtist);
-}
+    return (data || []).map(rowToArtist);
+  },
+  ["read-artists-from-supabase"],
+  { tags: [ARTISTS_TAG] }
+);
 
 function enrichProjectWithArtists(project, artistsLookup) {
   const artistSlugs = normalizeArtistSlugList(project.artistSlugs);
@@ -557,7 +558,12 @@ export async function deleteProject(id) {
 
 export async function getSiteSettings() {
   if (!isSupabaseReady()) return null;
-  return supabaseClient.getSiteSettings();
+  try {
+    return await supabaseClient.getSiteSettings();
+  } catch (error) {
+    console.warn("Failed to fetch site settings:", error?.message || error);
+    return null;
+  }
 }
 
 export async function setSiteSettings(updates) {
@@ -565,26 +571,27 @@ export async function setSiteSettings(updates) {
   return supabaseClient.setSiteSettings(updates);
 }
 
-export async function getClientLogos() {
-  "use cache";
-  cacheTag(CLIENT_LOGOS_TAG);
+export const getClientLogos = unstable_cache(
+  async () => {
+    const fallbacks = createFallbackClientLogos();
 
-  const fallbacks = createFallbackClientLogos();
-
-  try {
-    const resources = await listFolderResources("client_images", "image");
-    const cloudinaryLogos = normalizeClientLogoItems(resources.resources).map(
-      (item) => ({
-        ...item,
-        source: "cloudinary",
-      }),
-    );
-    return mergeClientLogos(fallbacks, cloudinaryLogos);
-  } catch {
-    const logos = await supabaseClient.getClientLogos();
-    return mergeClientLogos(fallbacks, normalizeClientLogoItems(logos));
-  }
-}
+    try {
+      const resources = await listFolderResources("client_images", "image");
+      const cloudinaryLogos = normalizeClientLogoItems(resources.resources).map(
+        (item) => ({
+          ...item,
+          source: "cloudinary",
+        }),
+      );
+      return mergeClientLogos(fallbacks, cloudinaryLogos);
+    } catch {
+      const logos = await supabaseClient.getClientLogos();
+      return mergeClientLogos(fallbacks, normalizeClientLogoItems(logos));
+    }
+  },
+  ["get-client-logos"],
+  { tags: [CLIENT_LOGOS_TAG] }
+);
 
 export async function addClientLogos(logos) {
   const normalized = (Array.isArray(logos) ? logos : [])
