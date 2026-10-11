@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import argon2 from "argon2";
+import { argon2Verify } from "hash-wasm";
 import { v4 as uuidv4 } from "uuid";
 import supabaseClient, { supabase } from "../../../lib/supabase";
 
@@ -22,7 +22,7 @@ export async function POST(req) {
     if (Date.now() > new Date(latest.expiresAt).getTime())
       return NextResponse.json({ error: "OTP expired" }, { status: 400 });
 
-    const match = await argon2.verify(latest.hashed || latest.otp, otp);
+    const match = await argon2Verify({ password: otp, hash: latest.hashed || latest.otp });
     if (!match)
       return NextResponse.json({ error: "Invalid OTP" }, { status: 400 });
 

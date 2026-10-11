@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
+    "build:worker": "opennextjs-cloudflare build",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "start": "next start",
     "lint": "eslint",
     "migrate:firestore": "node migrate_db.js",
@@ -14,6 +16,8 @@
     "migrate:supabase": "node scripts/migrate-firebase-to-supabase.js"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.10",
+    "@opentelemetry/api": "^1.9.1",
     "@supabase/supabase-js": "^2.115.0",
     "argon2": "^0.30.0",
     "cloudinary": "^1.36.0",
@@ -21,10 +25,11 @@
     "form-data": "^4.0.2",
     "framer-motion": "^12.38.0",
     "gsap": "^3.14.2",
+    "hash-wasm": "^4.12.0",
     "lenis": "^1.3.21",
     "lucide-react": "^1.7.0",
     "mailgun.js": "^6.0.0",
-    "next": "16.2.1",
+    "next": "^16.4.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "uuid": "^13.0.0"
@@ -35,8 +40,9 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint-config-next": "^16.4.0",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "wrangler": "^4.149.0"
   }
 }

@@ -5,7 +5,7 @@ import supabaseClient from "./lib/supabase";
 // Set to false to disable Maintenance Mode and restore full website access.
 const MAINTENANCE_MODE = false;
 
-export async function proxy(request) {
+export async function middleware(request) {
   const url = request.nextUrl.pathname;
 
   // 1. Check Maintenance Mode for public routes

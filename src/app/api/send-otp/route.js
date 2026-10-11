@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import argon2 from "argon2";
+import { argon2Verify } from "hash-wasm";
 import supabaseClient from "../../../lib/supabase";
 
 export async function POST(req) {
@@ -27,7 +27,7 @@ export async function POST(req) {
         { status: 400 },
       );
 
-    const passwordOk = await argon2.verify(passwordHash, password);
+    const passwordOk = await argon2Verify({ password, hash: passwordHash });
     if (!passwordOk)
       return NextResponse.json(
         { error: "Invalid credentials" },
