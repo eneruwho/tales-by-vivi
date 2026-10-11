@@ -1,19 +1,26 @@
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+function ensureConfigured() {
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
+}
+ensureConfigured();
 
 export async function uploadFromUrl(url, folder = "") {
+  ensureConfigured();
   const opts = { resource_type: "auto" };
   if (folder) opts.folder = folder;
   return cloudinary.uploader.upload(url, opts);
 }
 
 export async function listFolderResources(folder, resourceType = "image") {
+  ensureConfigured();
   const prefix = folder ? `${folder}/` : "";
   return cloudinary.api.resources({
     resource_type: resourceType,
@@ -24,6 +31,7 @@ export async function listFolderResources(folder, resourceType = "image") {
 }
 
 export async function destroyByPublicId(publicId, resourceType = "image") {
+  ensureConfigured();
   return cloudinary.uploader.destroy(publicId, {
     resource_type: resourceType,
     invalidate: true,
@@ -36,6 +44,7 @@ export async function uploadBuffer(
   resourceType = "auto",
   filename = "upload",
 ) {
+  ensureConfigured();
   const opts = {
     resource_type: resourceType,
     public_id: filename.replace(/\.[^/.]+$/, ""),

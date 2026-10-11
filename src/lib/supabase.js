@@ -1,20 +1,48 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+let _cachedClient = null;
+let _cachedKey = null;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn("Supabase credentials not fully provided; Supabase disabled");
+export function getSupabaseClient() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "https://icfzqlconsimtoenlppt.supabase.co";
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return null;
+  }
+
+  if (_cachedClient && _cachedKey === supabaseKey) {
+    return _cachedClient;
+  }
+
+  _cachedClient = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+  });
+  _cachedKey = supabaseKey;
+  return _cachedClient;
 }
 
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false },
-    })
-  : null;
+export const supabase = new Proxy(
+  {},
+  {
+    get(target, prop) {
+      const client = getSupabaseClient();
+      if (!client) {
+        throw new Error("Supabase client is not initialized. Please ensure SUPABASE_SERVICE_ROLE_KEY is set in environment.");
+      }
+      const val = Reflect.get(client, prop);
+      return typeof val === "function" ? val.bind(client) : val;
+    },
+  }
+);
 
 export function isSupabaseReady() {
-  return Boolean(supabase);
+  return Boolean(getSupabaseClient());
 }
 
 // Helpers for Auth / Sessions / OTPs / Settings / Clients
