@@ -105,31 +105,24 @@ async function getArtistsLookup() {
 
 const readProjectsFromSupabase = unstable_cache(
   async () => {
-    try {
-      if (!isSupabaseReady()) {
-        console.warn("Supabase not initialized; returning empty project list");
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error reading projects from Supabase:", error);
-        return [];
-      }
-
-      const projects = (data || []).map(rowToProject);
-      const artistsLookup = await getArtistsLookup();
-      return sortProjectsByCreatedAtDesc(
-        enrichProjectsWithArtists(projects, artistsLookup),
-      );
-    } catch (err) {
-      console.error("Error in readProjectsFromSupabase:", err);
-      return [];
+    if (!isSupabaseReady()) {
+      throw new Error("Supabase not initialized");
     }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    const projects = (data || []).map(rowToProject);
+    const artistsLookup = await getArtistsLookup();
+    return sortProjectsByCreatedAtDesc(
+      enrichProjectsWithArtists(projects, artistsLookup),
+    );
   },
   ["read-projects-from-supabase"],
   { tags: [PROJECTS_TAG, ARTISTS_TAG] }
@@ -137,27 +130,20 @@ const readProjectsFromSupabase = unstable_cache(
 
 const readArtistsFromSupabase = unstable_cache(
   async () => {
-    try {
-      if (!isSupabaseReady()) {
-        console.warn("Supabase not initialized; returning empty artist list");
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from("artists")
-        .select("*")
-        .order("name", { ascending: true });
-
-      if (error) {
-        console.error("Error reading artists from Supabase:", error);
-        return [];
-      }
-
-      return (data || []).map(rowToArtist);
-    } catch (err) {
-      console.error("Error in readArtistsFromSupabase:", err);
-      return [];
+    if (!isSupabaseReady()) {
+      throw new Error("Supabase not initialized");
     }
+
+    const { data, error } = await supabase
+      .from("artists")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map(rowToArtist);
   },
   ["read-artists-from-supabase"],
   { tags: [ARTISTS_TAG] }
@@ -195,7 +181,21 @@ function enrichProjectsWithArtists(projects, artistsLookup) {
 }
 
 export async function getProjects() {
-  return readProjectsFromSupabase();
+  try {
+    return await readProjectsFromSupabase();
+  } catch (err) {
+    console.error("Failed to get projects from Supabase:", err?.message || err);
+    return [];
+  }
+}
+
+export async function getArtists() {
+  try {
+    return await readArtistsFromSupabase();
+  } catch (err) {
+    console.error("Failed to get artists from Supabase:", err?.message || err);
+    return [];
+  }
 }
 
 function encodeProjectsCursor(data) {
@@ -387,10 +387,6 @@ export async function getProjectBySlug(slug) {
     console.error("Error fetching project by slug:", err);
     return null;
   }
-}
-
-export async function getArtists() {
-  return readArtistsFromSupabase();
 }
 
 export async function getArtistBySlug(slug) {
