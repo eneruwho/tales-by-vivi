@@ -47,5 +47,8 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Middleware is only needed for the admin session gate. Matching every
+  // public page and asset forces Netlify to invoke its edge layer for normal
+  // portfolio traffic and makes crawler spikes much more expensive.
+  matcher: ["/admin", "/admin/:path*"],
 };

@@ -2,12 +2,27 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tales-by-vivi",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-02-15",
+  "compatibility_date": "2026-10-16",
   "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "talesbyvivi.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.talesbyvivi.com",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://icfzqlconsimtoenlppt.supabase.co",
     "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME": "dsyvbjozy",

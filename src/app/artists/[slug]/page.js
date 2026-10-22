@@ -1,5 +1,7 @@
 import { getArtistForSlug, getProjectsForArtistSlug } from "./data";
 import ArtistProfileClient from "./ArtistProfileClient";
+
+export const revalidate = 300;
 import styles from "./artistDetail.module.css";
 
 const fallbackDescription =

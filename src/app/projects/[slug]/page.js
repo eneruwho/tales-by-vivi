@@ -1,5 +1,7 @@
 import { getProjectForSlug } from "./data";
 import ProjectDetailClient from "./ProjectDetailClient";
+
+export const revalidate = 300;
 import styles from "./projectDetail.module.css";
 
 const fallbackDescription =

@@ -1,6 +1,8 @@
 import { getProjects, getArtists } from "../actions";
 import ArtistsClient from "./ArtistsClient";
 
+export const revalidate = 300;
+
 export default async function ArtistsPage() {
   const projects = await getProjects();
   let artists = await getArtists();

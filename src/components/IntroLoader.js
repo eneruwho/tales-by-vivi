@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 
 export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
   const [phase, setPhase] = useState("playing");
+  const [shouldPlay, setShouldPlay] = useState(false);
   const exitTimerRef = useRef(null);
   const fallbackTimerRef = useRef(null);
   const hasStartedRef = useRef(false);
@@ -12,8 +13,14 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
       "(pointer: coarse), (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce)",
     ).matches;
     if (shouldSkip) {
+      setPhase("done");
       return undefined;
     }
+
+    // Mount the video only after the client confirms this is a desktop
+    // session that benefits from the intro. This keeps crawlers, mobile
+    // devices, and data-saver sessions from downloading the fallback video.
+    setShouldPlay(true);
 
     // Lock scroll while intro plays
     const prevOverflow = document.body.style.overflow;
@@ -55,7 +62,7 @@ export default function IntroLoader({ videoSrc = "/intro_video.mp4" }) {
     }, 3000);
   };
 
-  if (phase === "done") return null;
+  if (phase === "done" || !shouldPlay) return null;
 
   return (
     <div

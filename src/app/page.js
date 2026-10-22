@@ -6,6 +6,8 @@ import {
 } from "./actions";
 import ClientPage from "./ClientPage";
 
+export const revalidate = 300;
+
 export default async function Home() {
   try {
     const [projects, artists, siteSettings, clientLogos] = await Promise.all([
