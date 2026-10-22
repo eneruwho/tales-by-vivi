@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { uploadBuffer } from "../lib/cloudinary";
 import { normalizeProjectArtistRoles } from "../lib/projectArtists";
 import { normalizeCategoryList } from "../lib/categories";
+import { requireAdminSession } from "../lib/adminAuth";
 import {
   invalidateArtistsCache,
   invalidateClientLogosCache,
@@ -16,12 +17,24 @@ export async function getProjects() {
   return db.getProjects();
 }
 
+export async function getProjectSummaries() {
+  return db.getProjectSummaries();
+}
+
 export async function getProjectBySlug(slug) {
   return db.getProjectBySlug(slug);
 }
 
 export async function getArtists() {
   return db.getArtists();
+}
+
+export async function getArtistSummaries() {
+  return db.getArtistSummaries();
+}
+
+export async function getProjectById(id) {
+  return db.getProjectById(id);
 }
 
 export async function getArtistBySlug(slug) {
@@ -41,6 +54,7 @@ export async function getClientLogos() {
 }
 
 export async function deleteClientLogo(publicId) {
+  await requireAdminSession();
   return db.deleteClientLogo(publicId);
 }
 
@@ -136,6 +150,7 @@ async function uploadFiles(values, folder) {
 }
 
 export async function addProject(formData) {
+  await requireAdminSession();
   const title = formData.get("title");
   if (!title?.trim()) {
     throw new Error("Project title is required");
@@ -227,6 +242,7 @@ export async function addProject(formData) {
 }
 
 export async function addArtist(formData) {
+  await requireAdminSession();
   const name = formData.get("name");
   if (!name?.trim()) {
     throw new Error("Artist name is required");
@@ -254,6 +270,7 @@ export async function addArtist(formData) {
 }
 
 export async function updateShowreel(formData) {
+  await requireAdminSession();
   const showreelUrl = formData.get("showreelUrl");
   const resolvedShowreelUrl = hasNonEmptyString(showreelUrl)
     ? showreelUrl.trim()
@@ -272,6 +289,7 @@ export async function updateShowreel(formData) {
 }
 
 export async function addClientLogos(formData) {
+  await requireAdminSession();
   const uploaded = await uploadFiles(
     formData.getAll("clientLogos"),
     "client_images",
@@ -288,6 +306,7 @@ export async function addClientLogos(formData) {
 }
 
 export async function removeClientLogo(publicId) {
+  await requireAdminSession();
   await db.deleteClientLogo(publicId);
   revalidatePath("/");
   revalidatePath("/admin");
@@ -295,6 +314,7 @@ export async function removeClientLogo(publicId) {
 }
 
 export async function deleteArtist(id) {
+  await requireAdminSession();
   await db.deleteArtist(id);
 
   revalidatePath("/admin");
@@ -303,6 +323,7 @@ export async function deleteArtist(id) {
 }
 
 export async function updateProject(id, formData) {
+  await requireAdminSession();
   const title = formData.get("title");
   const slug = formData.get("slug") || slugify(title);
   const artistSlugs = parseArtistSlugList(formData.getAll("artistSlugs"));
@@ -377,6 +398,7 @@ export async function updateProject(id, formData) {
 }
 
 export async function deleteProject(id) {
+  await requireAdminSession();
   const deleted = await db.deleteProject(id);
 
   revalidatePath("/admin");

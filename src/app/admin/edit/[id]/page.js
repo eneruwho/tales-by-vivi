@@ -1,16 +1,14 @@
 import Link from "next/link";
 import styles from "../../admin.module.css";
-import { getProjects, updateProject } from "../../../actions";
+import { getProjectById, updateProject } from "../../../actions";
 import EditProjectForm from "../../../../components/EditProjectForm";
 
 export default async function EditProjectPage({ params }) {
   const { id } = await params;
   const numId = Number(id);
-  let projects = [];
   let project = null;
   try {
-    projects = await getProjects();
-    project = projects.find((p) => Number(p.id) === numId) || null;
+    project = await getProjectById(numId);
   } catch (err) {
     // Log server-side for debugging and show a helpful message in UI
     console.error(

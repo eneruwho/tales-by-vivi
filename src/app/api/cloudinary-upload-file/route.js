@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { uploadBuffer } from "../../../../src/lib/cloudinary";
+import { hasAdminRequest } from "../../../../src/lib/adminAuth";
 
 export async function POST(req) {
   try {
+    if (!(await hasAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const formData = await req.formData();
     const file = formData.get("file");
     const folder = formData.get("folder") || "showreels";

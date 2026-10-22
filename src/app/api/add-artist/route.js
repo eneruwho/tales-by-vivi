@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import * as db from "../../../../src/lib/db";
 import { invalidateArtistsCache } from "../../../../src/lib/cache";
+import { hasAdminRequest } from "../../../../src/lib/adminAuth";
 
 export async function POST(req) {
   try {
+    if (!(await hasAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const data = await req.json();
     if (!data?.name) {
       return NextResponse.json({ error: "Missing name" }, { status: 400 });

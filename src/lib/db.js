@@ -10,6 +10,34 @@ import { normalizeProjectArtistRoles } from "./projectArtists.js";
 import { normalizeCategoryList } from "./categories.js";
 import { ARTISTS_TAG, CLIENT_LOGOS_TAG, PROJECTS_TAG } from "./cache.js";
 
+const PUBLIC_PROJECT_COLUMNS = [
+  "id",
+  "title",
+  "slug",
+  "categories",
+  "subcategories",
+  "artist_roles",
+  "image_url",
+  "preview_image_url",
+  "video_url",
+  "youtube_url",
+  "instagram_url",
+  "media_type",
+  "artist_slugs",
+  "created_at",
+].join(",");
+
+const PUBLIC_ARTIST_COLUMNS = [
+  "id",
+  "name",
+  "slug",
+  "slogan",
+  "bio",
+  "instagram_url",
+  "image_url",
+  "created_at",
+].join(",");
+
 function normalizeSlug(value) {
   return String(value || "")
     .toLowerCase()
@@ -99,7 +127,7 @@ function projectMatchesArtist(project, artistSlug) {
 }
 
 async function getArtistsLookup() {
-  const artists = await getArtists();
+  const artists = await getArtistSummaries();
   return new Map(artists.map((artist) => [normalizeSlug(artist.slug), artist]));
 }
 
@@ -149,6 +177,37 @@ const readArtistsFromSupabase = unstable_cache(
   { tags: [ARTISTS_TAG] }
 );
 
+const readProjectSummariesFromSupabase = unstable_cache(
+  async () => {
+    if (!isSupabaseReady()) throw new Error("Supabase not initialized");
+    const { data, error } = await supabase
+      .from("projects")
+      .select(PUBLIC_PROJECT_COLUMNS)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const artistsLookup = await getArtistsLookup();
+    return sortProjectsByCreatedAtDesc(
+      enrichProjectsWithArtists((data || []).map(rowToProject), artistsLookup),
+    );
+  },
+  ["read-project-summaries-from-supabase"],
+  { tags: [PROJECTS_TAG, ARTISTS_TAG] },
+);
+
+const readArtistSummariesFromSupabase = unstable_cache(
+  async () => {
+    if (!isSupabaseReady()) throw new Error("Supabase not initialized");
+    const { data, error } = await supabase
+      .from("artists")
+      .select(PUBLIC_ARTIST_COLUMNS)
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return (data || []).map(rowToArtist);
+  },
+  ["read-artist-summaries-from-supabase"],
+  { tags: [ARTISTS_TAG] },
+);
+
 function enrichProjectWithArtists(project, artistsLookup) {
   const artistSlugs = normalizeArtistSlugList(project.artistSlugs);
   const artists = artistSlugs.map((slug) => {
@@ -194,6 +253,24 @@ export async function getArtists() {
     return await readArtistsFromSupabase();
   } catch (err) {
     console.error("Failed to get artists from Supabase:", err?.message || err);
+    return [];
+  }
+}
+
+export async function getProjectSummaries() {
+  try {
+    return await readProjectSummariesFromSupabase();
+  } catch (err) {
+    console.error("Failed to get project summaries from Supabase:", err?.message || err);
+    return [];
+  }
+}
+
+export async function getArtistSummaries() {
+  try {
+    return await readArtistSummariesFromSupabase();
+  } catch (err) {
+    console.error("Failed to get artist summaries from Supabase:", err?.message || err);
     return [];
   }
 }
@@ -389,6 +466,24 @@ export async function getProjectBySlug(slug) {
   }
 }
 
+export async function getProjectById(id) {
+  if (!isSupabaseReady()) return null;
+  const numericId = Number(id);
+  if (!Number.isFinite(numericId)) return null;
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", numericId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return enrichProjectWithArtists(rowToProject(data), await getArtistsLookup());
+  } catch (err) {
+    console.error("Error fetching project by id:", err);
+    return null;
+  }
+}
+
 export async function getArtistBySlug(slug) {
   if (!isSupabaseReady()) return null;
   try {
@@ -409,10 +504,16 @@ export async function getArtistBySlug(slug) {
 export async function getProjectsByArtist(artistSlug) {
   if (!isSupabaseReady()) return [];
   try {
-    const projects = await readProjectsFromSupabase();
-    return projects.filter((project) =>
-      projectMatchesArtist(project, artistSlug),
-    );
+    const normalizedSlug = normalizeSlug(artistSlug);
+    if (!normalizedSlug) return [];
+    const { data, error } = await supabase
+      .from("projects")
+      .select(PUBLIC_PROJECT_COLUMNS)
+      .overlaps("artist_slugs", [normalizedSlug])
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const artistsLookup = await getArtistsLookup();
+    return enrichProjectsWithArtists((data || []).map(rowToProject), artistsLookup);
   } catch (err) {
     console.error("Error fetching projects by artist:", err);
     return [];

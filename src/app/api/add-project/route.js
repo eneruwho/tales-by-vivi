@@ -3,6 +3,7 @@ import * as db from "../../../../src/lib/db";
 import { revalidatePath } from "next/cache";
 import { normalizeProjectArtistRoles } from "../../../../src/lib/projectArtists";
 import { invalidateProjectsCache } from "../../../../src/lib/cache";
+import { hasAdminRequest } from "../../../../src/lib/adminAuth";
 
 function slugify(text) {
   return String(text || "")
@@ -52,6 +53,9 @@ function revalidateProjectPaths(project) {
 
 export async function POST(req) {
   try {
+    if (!(await hasAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     if (!body?.title) {
       return NextResponse.json({ error: "Missing title" }, { status: 400 });

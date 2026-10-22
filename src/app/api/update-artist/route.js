@@ -2,9 +2,13 @@ import * as db from "../../../../src/lib/db";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { invalidateArtistsCache } from "../../../../src/lib/cache";
+import { hasAdminRequest } from "../../../../src/lib/adminAuth";
 
 export async function POST(req) {
   try {
+    if (!(await hasAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     const id = Number(body.id);
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

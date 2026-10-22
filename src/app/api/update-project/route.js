@@ -3,6 +3,7 @@ import * as db from "../../../../src/lib/db";
 import { revalidatePath } from "next/cache";
 import { normalizeProjectArtistRoles } from "../../../../src/lib/projectArtists";
 import { invalidateProjectsCache } from "../../../../src/lib/cache";
+import { hasAdminRequest } from "../../../../src/lib/adminAuth";
 
 function slugify(text) {
   return String(text || "")
@@ -52,6 +53,9 @@ function revalidateProjectPaths(project) {
 
 export async function POST(req) {
   try {
+    if (!(await hasAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     const id = Number(body.id);
     if (!id) {
@@ -69,9 +73,7 @@ export async function POST(req) {
     // find previous project to detect artist change
     let prevProject = null;
     try {
-      const allProjects = await db.getProjects();
-      prevProject =
-        allProjects.find((p) => Number(p.id) === Number(id)) || null;
+      prevProject = await db.getProjectById(id);
     } catch (e) {
       prevProject = null;
     }

@@ -1,6 +1,6 @@
 import {
-  getProjects,
-  getArtists,
+  getProjectSummaries,
+  getArtistSummaries,
   getSiteSettings,
   getClientLogos,
 } from "./actions";
@@ -11,8 +11,8 @@ export const revalidate = 300;
 export default async function Home() {
   try {
     const [projects, artists, siteSettings, clientLogos] = await Promise.all([
-      getProjects().catch(() => []),
-      getArtists().catch(() => []),
+      getProjectSummaries().catch(() => []),
+      getArtistSummaries().catch(() => []),
       getSiteSettings().catch(() => null),
       getClientLogos().catch(() => []),
     ]);
