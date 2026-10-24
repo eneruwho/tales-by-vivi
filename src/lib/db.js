@@ -414,15 +414,6 @@ async function getProjectsPageInternal({
     .slice(0, pageSize)
     .map((project) => enrichProjectWithArtists(project, artistsLookup));
 
-  if (normalizedQuery && projects.length === 0) {
-    projects = (await readProjectsFromSupabase())
-      .filter((project) =>
-        projectMatchesPageFilters(project, normalizedCategories, normalizedArtists, normalizedRoles),
-      )
-      .filter((project) => projectMatchesSearch(project, normalizedQuery))
-      .slice(0, pageSize);
-  }
-
   const lastProject = rawProjects[rawProjects.length - 1];
   const hasMore = rawProjects.length > pageSize;
 
