@@ -10,6 +10,7 @@ const nextConfig = {
     ],
   },
   experimental: {
+    agentUpgrade: "security",
     proxyClientMaxBodySize: "500mb",
     serverActions: {
       bodySizeLimit: "500mb",
