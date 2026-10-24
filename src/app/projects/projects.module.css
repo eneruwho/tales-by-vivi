@@ -52,6 +52,49 @@
   padding: 3rem 0 1rem;
 }
 
+.statusPanel,
+.artistFallback {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 190, 90, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 190, 90, 0.08);
+}
+
+.artistFallback {
+  display: block;
+  margin-top: 2rem;
+}
+
+.statusKicker {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.statusText {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.statusLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.statusLink {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .shell {
   max-width: 1440px;
   margin: 0 auto;

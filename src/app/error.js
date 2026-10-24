@@ -25,7 +25,8 @@ export default function ErrorBoundary({ error, reset }) {
         Something went wrong
       </h2>
       <p style={{ maxWidth: "480px", opacity: 0.7, marginBottom: "2rem" }}>
-        We encountered an unexpected error loading this page.
+        This page could not load right now. You can try again, return home, or
+        follow the studio while we recover.
         {error?.digest && (
           <span style={{ display: "block", fontSize: "0.8rem", marginTop: "0.5rem" }}>
             Error Digest: {error.digest}
@@ -61,6 +62,14 @@ export default function ErrorBoundary({ error, reset }) {
           Go Home
         </Link>
       </div>
+      <a
+        href="https://www.instagram.com/talesby.vivi/"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ marginTop: "1.5rem", color: "inherit", opacity: 0.8 }}
+      >
+        Tales by VIVI on Instagram
+      </a>
     </div>
   );
 }

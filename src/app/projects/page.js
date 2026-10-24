@@ -1,4 +1,5 @@
 import { getProjectsPage } from "../../lib/db";
+import { getArtistSummaries } from "../actions";
 import ProjectsClient from "./ProjectsClient";
 
 export default async function ProjectsPage({ searchParams }) {
@@ -18,18 +19,23 @@ export default async function ProjectsPage({ searchParams }) {
     : params?.role
       ? [params.role]
       : [];
-  const result = await getProjectsPage({
-    category,
-    artist,
-    role,
-    query: params?.q || "",
-  });
+  const [result, artists] = await Promise.all([
+    getProjectsPage({
+      category,
+      artist,
+      role,
+      query: params?.q || "",
+    }),
+    getArtistSummaries(),
+  ]);
 
   return (
     <ProjectsClient
       projects={result.projects}
       initialCursor={result.nextCursor}
       initialHasMore={result.hasMore}
+      degraded={Boolean(result.degraded)}
+      artists={artists}
     />
   );
 }

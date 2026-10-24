@@ -177,6 +177,8 @@ export default function ProjectsClient({
   projects = [],
   initialCursor = null,
   initialHasMore = false,
+  degraded = false,
+  artists = [],
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -184,14 +186,20 @@ export default function ProjectsClient({
   const [nextCursor, setNextCursor] = useState(initialCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
 
   useEffect(() => {
     setLoadedProjects(projects);
     setNextCursor(initialCursor);
     setHasMore(initialHasMore);
+    setLoadError(
+      degraded
+        ? "The project archive is temporarily unavailable. You can still browse artist profiles below."
+        : null,
+    );
     setSearchInput(searchParams.get("q") || "");
-  }, [projects, initialCursor, initialHasMore, searchParams]);
+  }, [projects, initialCursor, initialHasMore, degraded, searchParams]);
   const selectedFilters = useMemo(
     () => ({
       category: parseFacetValues(searchParams, "category"),
@@ -252,6 +260,7 @@ export default function ProjectsClient({
   async function loadMore() {
     if (!nextCursor || isLoadingMore) return;
     setIsLoadingMore(true);
+    setLoadError(null);
 
     const params = new URLSearchParams();
     params.set("limit", "12");
@@ -264,11 +273,20 @@ export default function ProjectsClient({
 
     try {
       const response = await fetch(`/api/get-projects?${params.toString()}`);
-      if (!response.ok) throw new Error("Unable to load more projects");
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error(
+            "Project loading is temporarily limited to protect the site. Please try again shortly.",
+          );
+        }
+        throw new Error("Unable to load more projects right now.");
+      }
       const result = await response.json();
       setLoadedProjects((current) => [...current, ...(result.projects || [])]);
       setNextCursor(result.nextCursor || null);
       setHasMore(Boolean(result.hasMore && result.nextCursor));
+    } catch (error) {
+      setLoadError(error?.message || "Unable to load more projects right now.");
     } finally {
       setIsLoadingMore(false);
     }
@@ -340,6 +358,30 @@ export default function ProjectsClient({
             Back to home
           </Link>
         </header>
+
+        {loadError && (
+          <section className={styles.statusPanel} role="status" aria-live="polite">
+            <div>
+              <p className={styles.statusKicker}>Archive status</p>
+              <p className={styles.statusText}>{loadError}</p>
+            </div>
+            {filteredProjects.length === 0 && (
+              <div className={styles.statusLinks}>
+                <Link href="/artists" className={styles.statusLink}>
+                  Browse artists
+                </Link>
+                <a
+                  href="https://www.instagram.com/talesby.vivi/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.statusLink}
+                >
+                  Tales by VIVI on Instagram
+                </a>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className={styles.filtersPanel} aria-label="Project filters">
           <form className={styles.searchForm} onSubmit={submitSearch}>
@@ -530,6 +572,25 @@ export default function ProjectsClient({
               {isLoadingMore ? "Loading..." : "Load more projects"}
             </button>
           </div>
+        )}
+
+        {filteredProjects.length === 0 && loadError && artists.length > 0 && (
+          <section className={styles.artistFallback} aria-label="Artist profiles">
+            <p className={styles.statusKicker}>Artist profiles remain available</p>
+            <div className={styles.statusLinks}>
+              {artists.filter((artist) => artist.instagramUrl).map((artist) => (
+                <a
+                  key={artist.id}
+                  href={artist.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.statusLink}
+                >
+                  {artist.name} on Instagram
+                </a>
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </main>

@@ -83,7 +83,16 @@ export default function ArtistsClient({ artists, projects }) {
             justifyContent: "center",
           }}
         >
-          <p>No artists found.</p>
+          <p>Artist profiles are temporarily unavailable.</p>
+          <p>
+            <a
+              href="https://www.instagram.com/talesby.vivi/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Follow Tales by VIVI on Instagram
+            </a>
+          </p>
         </div>
       </main>
     );
