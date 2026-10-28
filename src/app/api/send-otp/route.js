@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { argon2Verify } from "hash-wasm";
 import supabaseClient from "../../../lib/supabase";
+import { verifyPassword } from "../../../lib/passwordHash";
 
 export async function POST(req) {
   try {
@@ -27,7 +27,15 @@ export async function POST(req) {
         { status: 400 },
       );
 
-    const passwordOk = await argon2Verify({ password, hash: passwordHash });
+    const { ok: passwordOk, legacy } = await verifyPassword(password, passwordHash);
+    if (legacy)
+      return NextResponse.json(
+        {
+          error:
+            "Admin password must be reset for the new host. Run `npm run seed:admin` locally.",
+        },
+        { status: 409 },
+      );
     if (!passwordOk)
       return NextResponse.json(
         { error: "Invalid credentials" },
