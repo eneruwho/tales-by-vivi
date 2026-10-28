@@ -9,6 +9,7 @@ import { listFolderResources, destroyByPublicId } from "./cloudinary.js";
 import { normalizeProjectArtistRoles } from "./projectArtists.js";
 import { normalizeCategoryList } from "./categories.js";
 import { ARTISTS_TAG, CLIENT_LOGOS_TAG, PROJECTS_TAG } from "./cache.js";
+import { memoize } from "./memoryCache.js";
 
 const PUBLIC_PROJECT_COLUMNS = [
   "id",
@@ -259,7 +260,7 @@ export async function getArtists() {
 
 export async function getProjectSummaries() {
   try {
-    return await readProjectSummariesFromSupabase();
+    return await memoize("project-summaries", readProjectSummariesFromSupabase);
   } catch (err) {
     console.error("Failed to get project summaries from Supabase:", err?.message || err);
     return [];
@@ -268,10 +269,22 @@ export async function getProjectSummaries() {
 
 export async function getArtistSummaries() {
   try {
-    return await readArtistSummariesFromSupabase();
+    return await memoize("artist-summaries", readArtistSummariesFromSupabase);
   } catch (err) {
     console.error("Failed to get artist summaries from Supabase:", err?.message || err);
     return [];
+  }
+}
+
+// Full archive for the /projects page, which filters and pages in the browser.
+// Unlike getProjectSummaries this reports failure instead of hiding it as [].
+export async function getProjectListing() {
+  try {
+    const projects = await memoize("project-summaries", readProjectSummariesFromSupabase);
+    return { projects, degraded: false };
+  } catch (err) {
+    console.error("Failed to load project listing:", err?.message || err);
+    return { projects: [], degraded: true };
   }
 }
 

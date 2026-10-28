@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./projects.module.css";
 import { optimizeImageUrl } from "../../lib/media";
@@ -14,6 +14,9 @@ import {
   getProjectArtistSlugs,
   getProjectRoleLabels,
 } from "../../lib/projectArtists";
+
+const PAGE_SIZE = 12;
+const FACETS = ["category", "artist", "role"];
 
 function normalizeText(value) {
   return String(value || "")
@@ -61,15 +64,10 @@ function buildProjectsHref(searchParams, nextState = {}) {
   params.delete("facet");
   params.delete("value");
 
-  ["category", "artist", "role"].forEach((facet) => params.delete(facet));
-
-  const categories = nextState.category || [];
-  const artists = nextState.artist || [];
-  const roles = nextState.role || [];
-
-  categories.forEach((value) => params.append("category", value));
-  artists.forEach((value) => params.append("artist", value));
-  roles.forEach((value) => params.append("role", value));
+  FACETS.forEach((facet) => params.delete(facet));
+  FACETS.forEach((facet) =>
+    (nextState[facet] || []).forEach((value) => params.append(facet, value)),
+  );
 
   const query = params.toString();
   return query ? `/projects?${query}` : "/projects";
@@ -95,111 +93,174 @@ function toggleFacetValueHref(searchParams, facet, value) {
   });
 }
 
-function matchesSelectedValues(values, selectedValues) {
-  if (!selectedValues.length) return true;
-  const normalizedValues = values.map((value) => normalizeText(value));
-  return selectedValues.some((selected) =>
-    normalizedValues.includes(normalizeText(selected)),
-  );
+function toSearchTokens(query) {
+  return normalizeText(query).match(/[a-z0-9]+/g) || [];
 }
 
-function matchesProjectFilters(project, selectedFilters) {
-  const projectCategories = Array.isArray(project.categories)
-    ? project.categories
-    : [];
-  const projectArtists = getProjectArtistEntries(project);
-  const projectArtistTokens = [
-    ...projectArtists.map((artist) => artist.slug),
-    ...projectArtists.map((artist) => artist.name),
-    ...getProjectArtistSlugs(project),
-  ].filter(Boolean);
-  const projectRoles = getProjectRoleLabels(project);
+// Everything needed to match a project is derived once, so toggling a filter
+// is a cheap in-memory pass over the whole archive.
+function buildProjectIndex(project) {
+  const artistEntries = getProjectArtistEntries(project);
+  const categories = (Array.isArray(project.categories) ? project.categories : [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const roles = getProjectRoleLabels(project);
+  const artistTokens = new Set(
+    [
+      ...artistEntries.flatMap((artist) => [artist.slug, artist.name]),
+      ...getProjectArtistSlugs(project),
+    ]
+      .filter(Boolean)
+      .map(normalizeText),
+  );
 
-  // Category must match (if selected)
-  if (!matchesSelectedValues(projectCategories, selectedFilters.category))
+  return {
+    project,
+    artistLabels: artistEntries
+      .map((artist) => artist.name || artist.slug)
+      .filter(Boolean),
+    categoryLabels: categories,
+    roleLabels: roles,
+    categories: new Set(categories.map(normalizeText)),
+    artistTokens,
+    roles: new Set(roles.map(normalizeText)),
+    roleEntries: getProjectArtistRoleEntries(project).map((entry) => ({
+      tokens: new Set([entry.slug, entry.name].filter(Boolean).map(normalizeText)),
+      roles: new Set((entry.roles || []).map(normalizeText)),
+    })),
+    haystack: [
+      project.title,
+      ...categories,
+      ...artistEntries.flatMap((artist) => [artist.name, artist.slug]),
+      ...roles,
+    ]
+      .join(" ")
+      .toLowerCase(),
+  };
+}
+
+function normalizeSelection(selected) {
+  return {
+    category: selected.category.map(normalizeText),
+    artist: selected.artist.map(normalizeText),
+    role: selected.role.map(normalizeText),
+    search: selected.search,
+  };
+}
+
+function matchesIndexedProject(entry, selection) {
+  if (selection.search.some((token) => !entry.haystack.includes(token))) {
     return false;
-
-  const hasArtistSel = selectedFilters.artist.length > 0;
-  const hasRoleSel = selectedFilters.role.length > 0;
-
-  // If both artist and role are selected, require an artist-role pairing
-  if (hasArtistSel && hasRoleSel) {
-    const roleEntries = getProjectArtistRoleEntries(project);
-
-    // Check that at least one selected artist has at least one of the selected roles
-    const artistRoleMatch = selectedFilters.artist.some((selArtist) => {
-      const normArtist = normalizeText(selArtist);
-
-      return roleEntries.some((entry) => {
-        const entrySlug = normalizeText(entry.slug || "");
-        const entryName = normalizeText(entry.name || "");
-
-        const artistMatchesEntry =
-          (entrySlug && entrySlug === normArtist) ||
-          (entryName && entryName === normArtist) ||
-          projectArtistTokens.map(normalizeText).includes(normArtist);
-
-        if (!artistMatchesEntry) return false;
-
-        const entryRoles = (Array.isArray(entry.roles) ? entry.roles : []).map(
-          normalizeText,
-        );
-        return selectedFilters.role.some((selRole) =>
-          entryRoles.includes(normalizeText(selRole)),
-        );
-      });
-    });
-
-    return !!artistRoleMatch;
+  }
+  if (
+    selection.category.length &&
+    !selection.category.some((value) => entry.categories.has(value))
+  ) {
+    return false;
   }
 
-  // Fallback: independent facet matching
-  return (
-    matchesSelectedValues(projectArtistTokens, selectedFilters.artist) &&
-    matchesSelectedValues(projectRoles, selectedFilters.role)
-  );
+  const hasArtist = selection.artist.length > 0;
+  const hasRole = selection.role.length > 0;
+
+  // Artist + role together must be a pairing: the artist holds that role.
+  if (hasArtist && hasRole) {
+    return selection.artist.some((artist) =>
+      entry.roleEntries.some((roleEntry) => {
+        // Legacy role lists have no artist attached; they apply to the project.
+        const belongs = roleEntry.tokens.size
+          ? roleEntry.tokens.has(artist)
+          : entry.artistTokens.has(artist);
+        return (
+          belongs && selection.role.some((role) => roleEntry.roles.has(role))
+        );
+      }),
+    );
+  }
+
+  if (hasArtist && !selection.artist.some((value) => entry.artistTokens.has(value))) {
+    return false;
+  }
+  if (hasRole && !selection.role.some((value) => entry.roles.has(value))) {
+    return false;
+  }
+  return true;
 }
 
-function FilterChip({ href, children, active = false }) {
+function collectOptions(index) {
+  const maps = { category: new Map(), artist: new Map(), role: new Map() };
+  const add = (map, label) => {
+    const key = normalizeText(label);
+    if (key && !map.has(key)) map.set(key, String(label).trim());
+  };
+
+  index.forEach((entry) => {
+    entry.categoryLabels.forEach((label) => add(maps.category, label));
+    entry.artistLabels.forEach((label) => add(maps.artist, label));
+    entry.roleLabels.forEach((label) => add(maps.role, label));
+  });
+
+  const sorted = (map) =>
+    Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  return {
+    category: sorted(maps.category),
+    artist: sorted(maps.artist),
+    role: sorted(maps.role),
+  };
+}
+
+function FilterChip({
+  href,
+  onNavigate,
+  children,
+  active = false,
+  count,
+  disabled = false,
+}) {
+  function handleClick(event) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (!disabled) onNavigate(href);
+  }
+
   return (
-    <Link
+    <a
       href={href}
-      className={`${styles.filterChip} ${active ? styles.filterChipActive : ""}`}
+      onClick={handleClick}
+      className={`${styles.filterChip} ${active ? styles.filterChipActive : ""} ${
+        disabled ? styles.filterChipDim : ""
+      }`}
       data-cursor="hover"
       aria-current={active ? "true" : undefined}
+      aria-disabled={disabled ? "true" : undefined}
     >
       {children}
-    </Link>
+      {typeof count === "number" && (
+        <span className={styles.filterCount}>{count}</span>
+      )}
+    </a>
   );
 }
 
 export default function ProjectsClient({
   projects = [],
-  initialCursor = null,
-  initialHasMore = false,
   degraded = false,
   artists = [],
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loadedProjects, setLoadedProjects] = useState(projects);
-  const [nextCursor, setNextCursor] = useState(initialCursor);
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [loadError, setLoadError] = useState(null);
-  const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
+  const urlQuery = searchParams.get("q") || "";
+  const [searchDraft, setSearchDraft] = useState(null);
+  const searchInput = searchDraft ?? urlQuery;
 
-  useEffect(() => {
-    setLoadedProjects(projects);
-    setNextCursor(initialCursor);
-    setHasMore(initialHasMore);
-    setLoadError(
-      degraded
-        ? "The project archive is temporarily unavailable. You can still browse artist profiles below."
-        : null,
-    );
-    setSearchInput(searchParams.get("q") || "");
-  }, [projects, initialCursor, initialHasMore, degraded, searchParams]);
   const selectedFilters = useMemo(
     () => ({
       category: parseFacetValues(searchParams, "category"),
@@ -210,115 +271,94 @@ export default function ProjectsClient({
   );
 
   const hasActiveFilters =
-    selectedFilters.category.length > 0 ||
-    selectedFilters.artist.length > 0 ||
-    selectedFilters.role.length > 0;
+    FACETS.some((facet) => selectedFilters[facet].length > 0) ||
+    Boolean(urlQuery);
 
-  const facetOptions = useMemo(() => {
-    const categories = new Map();
-    const artists = new Map();
-    const roles = new Map();
+  // Filter state lives in the URL, but changing it is a client-only history
+  // update: no server render, no Worker request, no database read.
+  const navigate = useCallback((href) => {
+    setSearchDraft(null);
+    window.history.pushState(null, "", href);
+  }, []);
 
-    loadedProjects.forEach((project) => {
-      (Array.isArray(project.categories) ? project.categories : []).forEach(
-        (category) => {
-          const label = String(category || "").trim();
-          if (!label) return;
-          categories.set(label.toLowerCase(), label);
-        },
-      );
+  const index = useMemo(() => projects.map(buildProjectIndex), [projects]);
+  const allOptions = useMemo(() => collectOptions(index), [index]);
 
-      getProjectArtistEntries(project).forEach((artist) => {
-        const label = artist.name || artist.slug;
-        if (!label) return;
-        artists.set(normalizeText(label), label);
-      });
-
-      getProjectRoleLabels(project).forEach((role) => {
-        const label = String(role || "").trim();
-        if (!label) return;
-        roles.set(label.toLowerCase(), label);
-      });
-    });
-
-    return {
-      category: Array.from(categories.values()).sort((a, b) =>
-        a.localeCompare(b),
-      ),
-      artist: Array.from(artists.values()).sort((a, b) => a.localeCompare(b)),
-      role: Array.from(roles.values()).sort((a, b) => a.localeCompare(b)),
-    };
-  }, [loadedProjects]);
+  const searchTokens = useMemo(() => toSearchTokens(urlQuery), [urlQuery]);
 
   const filteredProjects = useMemo(() => {
-    if (!hasActiveFilters) return loadedProjects;
-    return loadedProjects.filter((project) =>
-      matchesProjectFilters(project, selectedFilters),
+    const selection = normalizeSelection({
+      ...selectedFilters,
+      search: searchTokens,
+    });
+    return index
+      .filter((entry) => matchesIndexedProject(entry, selection))
+      .map((entry) => entry.project);
+  }, [index, selectedFilters, searchTokens]);
+
+  // How many projects each chip would show given the other active filters, so
+  // dead-end combinations are visible before you click them.
+  const facetCounts = useMemo(() => {
+    const counts = { category: {}, artist: {}, role: {} };
+    FACETS.forEach((facet) => {
+      allOptions[facet].forEach((value) => {
+        const selection = normalizeSelection({
+          ...selectedFilters,
+          [facet]: [value],
+          search: searchTokens,
+        });
+        counts[facet][normalizeText(value)] = index.reduce(
+          (total, entry) => total + (matchesIndexedProject(entry, selection) ? 1 : 0),
+          0,
+        );
+      });
+    });
+    return counts;
+  }, [index, allOptions, selectedFilters, searchTokens]);
+
+  // Paging resets whenever the filters change.
+  const filterKey = searchParams.toString();
+  const [paging, setPaging] = useState({ key: filterKey, count: PAGE_SIZE });
+  const visibleCount = paging.key === filterKey ? paging.count : PAGE_SIZE;
+  const visibleProjects = filteredProjects.slice(0, visibleCount);
+  const hasMore = filteredProjects.length > visibleCount;
+
+  const showMore = useCallback(() => {
+    setPaging((current) => ({
+      key: filterKey,
+      count: (current.key === filterKey ? current.count : PAGE_SIZE) + PAGE_SIZE,
+    }));
+  }, [filterKey]);
+
+  const sentinelRef = useRef(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) showMore();
+      },
+      { rootMargin: "600px 0px" },
     );
-  }, [loadedProjects, hasActiveFilters, selectedFilters]);
-
-  async function loadMore() {
-    if (!nextCursor || isLoadingMore) return;
-    setIsLoadingMore(true);
-    setLoadError(null);
-
-    const params = new URLSearchParams();
-    params.set("limit", "12");
-    params.set("cursor", nextCursor);
-    ["category", "artist"].forEach((facet) =>
-      selectedFilters[facet].forEach((value) => params.append(facet, value)),
-    );
-    selectedFilters.role.forEach((value) => params.append("role", value));
-    if (searchParams.get("q")) params.set("q", searchParams.get("q"));
-
-    try {
-      const response = await fetch(`/api/get-projects?${params.toString()}`);
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error(
-            "Project loading is temporarily limited to protect the site. Please try again shortly.",
-          );
-        }
-        throw new Error("Unable to load more projects right now.");
-      }
-      const result = await response.json();
-      setLoadedProjects((current) => [...current, ...(result.projects || [])]);
-      setNextCursor(result.nextCursor || null);
-      setHasMore(Boolean(result.hasMore && result.nextCursor));
-    } catch (error) {
-      setLoadError(error?.message || "Unable to load more projects right now.");
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, showMore, visibleCount]);
 
   function submitSearch(event) {
     event.preventDefault();
     const params = new URLSearchParams(searchParams.toString());
     if (searchInput.trim()) params.set("q", searchInput.trim());
     else params.delete("q");
-    router.push(`/projects${params.toString() ? `?${params.toString()}` : ""}`);
+    navigate(`/projects${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
-  const clearAllHref = buildProjectsHref(searchParams, {});
+  const clearAllHref = "/projects";
 
   const facetGroups = [
-    {
-      key: "category",
-      title: "Categories",
-      values: facetOptions.category,
-    },
-    {
-      key: "artist",
-      title: "Artists",
-      values: facetOptions.artist,
-    },
-    {
-      key: "role",
-      title: "Roles",
-      values: facetOptions.role,
-    },
-  ];
+    { key: "category", title: "Categories" },
+    { key: "artist", title: "Artists" },
+    { key: "role", title: "Roles" },
+  ].map((group) => ({ ...group, values: allOptions[group.key] }));
 
   const activeFilterChips = [
     ...selectedFilters.category.map((value) => ({
@@ -341,6 +381,10 @@ export default function ProjectsClient({
     })),
   ];
 
+  const statusMessage = degraded
+    ? "The project archive is temporarily unavailable. You can still browse artist profiles below."
+    : null;
+
   return (
     <main className={styles.main}>
       <div className={styles.shell}>
@@ -359,14 +403,21 @@ export default function ProjectsClient({
           </Link>
         </header>
 
-        {loadError && (
+        {statusMessage && (
           <section className={styles.statusPanel} role="status" aria-live="polite">
             <div>
               <p className={styles.statusKicker}>Archive status</p>
-              <p className={styles.statusText}>{loadError}</p>
+              <p className={styles.statusText}>{statusMessage}</p>
             </div>
             {filteredProjects.length === 0 && (
               <div className={styles.statusLinks}>
+                <button
+                  type="button"
+                  className={styles.statusLink}
+                  onClick={() => router.refresh()}
+                >
+                  Try again
+                </button>
                 <Link href="/artists" className={styles.statusLink}>
                   Browse artists
                 </Link>
@@ -392,7 +443,7 @@ export default function ProjectsClient({
               <input
                 id="project-search"
                 value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
+                onChange={(event) => setSearchDraft(event.target.value)}
                 placeholder="Title, category, artist..."
                 className={styles.searchInput}
               />
@@ -402,11 +453,15 @@ export default function ProjectsClient({
             </div>
           </form>
           <div className={styles.filterPills}>
-            <FilterChip href="/projects" active={!hasActiveFilters}>
+            <FilterChip
+              href="/projects"
+              onNavigate={navigate}
+              active={!hasActiveFilters}
+            >
               All Projects
             </FilterChip>
             <span className={styles.filterHint}>
-              Select multiple chips to stack filters.
+              Select multiple chips to stack filters. Numbers show matching projects.
             </span>
           </div>
 
@@ -417,6 +472,7 @@ export default function ProjectsClient({
                 {activeFilterChips.map((chip) => (
                   <FilterChip
                     key={chip.key}
+                    onNavigate={navigate}
                     href={toggleFacetValueHref(
                       searchParams,
                       chip.facet,
@@ -428,9 +484,16 @@ export default function ProjectsClient({
                   </FilterChip>
                 ))}
               </div>
-              <Link href={clearAllHref} className={styles.clearFilterLink}>
+              <a
+                href={clearAllHref}
+                className={styles.clearFilterLink}
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigate(clearAllHref);
+                }}
+              >
                 Clear all
-              </Link>
+              </a>
             </div>
           )}
 
@@ -447,6 +510,11 @@ export default function ProjectsClient({
                     return (
                       <FilterChip
                         key={value}
+                        onNavigate={navigate}
+                        count={facetCounts[group.key][normalizeText(value)]}
+                        disabled={
+                          !active && facetCounts[group.key][normalizeText(value)] === 0
+                        }
                         href={toggleFacetValueHref(
                           searchParams,
                           group.key,
@@ -466,7 +534,7 @@ export default function ProjectsClient({
 
         {filteredProjects.length > 0 ? (
           <section className={styles.grid}>
-            {filteredProjects.map((project) => {
+            {visibleProjects.map((project) => {
               const imageSrc = project.previewImageUrl || project.imageUrl;
               const artistEntries = getProjectArtistEntries(project);
               const artistLabel = getProjectArtistLabel(project);
@@ -489,12 +557,13 @@ export default function ProjectsClient({
                   <div className={styles.mediaWrap}>
                     {imageSrc ? (
                       <Image
-                        src={optimizeImageUrl(imageSrc, 1000)}
+                        src={optimizeImageUrl(imageSrc, 900)}
                         alt={project.title}
                         className={styles.media}
                         width={1600}
                         height={900}
                         sizes="(max-width: 768px) 92vw, 45vw"
+                        unoptimized
                       />
                     ) : (
                       <div className={styles.placeholder}>
@@ -562,19 +631,18 @@ export default function ProjectsClient({
         )}
 
         {hasMore && (
-          <div className={styles.loadMoreWrap}>
+          <div className={styles.loadMoreWrap} ref={sentinelRef}>
             <button
               type="button"
               className={styles.loadMoreButton}
-              onClick={loadMore}
-              disabled={isLoadingMore}
+              onClick={showMore}
             >
-              {isLoadingMore ? "Loading..." : "Load more projects"}
+              Load more projects
             </button>
           </div>
         )}
 
-        {filteredProjects.length === 0 && loadError && artists.length > 0 && (
+        {filteredProjects.length === 0 && degraded && artists.length > 0 && (
           <section className={styles.artistFallback} aria-label="Artist profiles">
             <p className={styles.statusKicker}>Artist profiles remain available</p>
             <div className={styles.statusLinks}>
