@@ -11,7 +11,7 @@
     "lint": "eslint",
     "migrate:firestore": "node migrate_db.js",
     "migrate:project-artists": "node scripts/migrate-project-artists.js",
-    "seed:admin": "node scripts/seed-admin.js",
+    "seed:admin": "node scripts/seed-admin.mjs",
     "seed:supabase": "node scripts/seed-supabase.js",
     "migrate:supabase": "node scripts/migrate-firebase-to-supabase.js",
     "postinstall": "node scripts/patch-opennext.js"
@@ -26,7 +26,6 @@
     "form-data": "^4.0.2",
     "framer-motion": "^12.38.0",
     "gsap": "^3.14.2",
-    "hash-wasm": "^4.12.0",
     "lenis": "^1.3.21",
     "lucide-react": "^1.7.0",
     "mailgun.js": "^6.0.0",

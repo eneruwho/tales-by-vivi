@@ -56,3 +56,7 @@ check_db.js
 migrate_db.js
 scripts/*
 !scripts/patch-opennext.js
+!scripts/seed-admin.mjs
+
+# local Wrangler secrets
+.dev.vars
