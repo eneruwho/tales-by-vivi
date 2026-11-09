@@ -1104,8 +1104,15 @@
     border-radius: 0;
   }
 
+  /* The mobile hero is a still image (no GSAP overlay fade), so darken it
+     enough for the hero title, CTA and "Showreel" label to stay legible. */
   .showreelVidOverlay {
-    background: rgba(0, 0, 0, 0.26);
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.65) 50%,
+      rgba(0, 0, 0, 0.8) 100%
+    );
   }
 
   .showreelMeta {

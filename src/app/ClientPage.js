@@ -133,7 +133,14 @@ export default function ClientPage({
     Object.keys(catCounts).length > 0 ? catCounts : defaultCategories;
 
   useEffect(() => {
-    if (isMobile) return undefined;
+    if (isMobile) {
+      // The first render assumes desktop, so GSAP may already have faded the
+      // overlay to 0.2. Clear it so the mobile CSS darkening applies fully.
+      if (showreelOverlayRef.current) {
+        gsap.set(showreelOverlayRef.current, { clearProps: "opacity" });
+      }
+      return undefined;
+    }
     if (
       !showreelRef.current ||
       !showreelVideoRef.current ||
